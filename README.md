@@ -1,1 +1,0 @@
-# STIS_SEMINAR_C

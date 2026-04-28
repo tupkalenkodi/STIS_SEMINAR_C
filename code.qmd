@@ -1,0 +1,401 @@
+---
+title: "Seminar: Statistics for Data Science: Group C"
+author: "Dmytro Tupkalenko (89252101), ..."
+date: "May 2026"
+date-format: "MMMM YYYY"
+format: 
+  html:
+    toc: true
+    toc_float: yes
+    toc_depth: 3
+    embed-resources: true
+    theme: "lux"
+execute: 
+  warning: false
+  messages: false
+  echo: true
+  error: false
+---
+
+
+
+## Setup
+
+```{r}
+#| label: setup
+
+
+# Packages used
+library(tidyverse)
+library(naniar)  
+library(Hmisc)     
+library(kableExtra)
+library(GGally)   
+library(gt)
+library(reshape2)
+library(htmltools)
+library(patchwork)
+library(psych)
+library(viridis)
+
+# ── Global plot settings ──────────────────────────────────────────────────────
+# Viridis palette used throughout: "A"=magma  "B"=inferno  "C"=plasma
+#                                  "D"=viridis "E"=cividis  "H"=turbo
+VIR_PAL = "B"
+theme_set(theme_minimal(base_size = 11))
+setwd("./")
+
+```
+
+
+
+## Data Management
+
+**Read datasets**
+```{r}
+#| label: data_import
+
+d_mat = read.table("data/student-mat.csv", sep=";", header=TRUE)
+d_por = read.table("data/student-por.csv", sep=";", header=TRUE)
+
+```
+
+**We will work on both Mathematics and Portuguese - so merge them**
+```{r}
+#| label: data_merge
+
+# NOTE: we use bigger set of variables than in the description of the seminar,
+# because we saw that in the case of using the smaller set, we get 
+# non-consistent rows, so two rows in mat and por with the same signature
+# gave different responses to e.g. activities
+d_combined = merge(d_mat, d_por, 
+           by = c("school", "sex", "age", "address", "famsize", "Pstatus", 
+                  "Medu", "Fedu", "Mjob", "Fjob", "reason", 
+                  "guardian", "traveltime", "studytime", "activities", 
+                  "nursery", "higher", "internet", "romantic", 
+                  "famrel", "freetime", "goout", "Dalc", "Walc", "health"),
+           suffixes = c(".mat", ".por"))
+
+cat("Number of overlapping students:", nrow(d_combined), "\n")
+
+```
+
+**Recode Variables**
+```{r}
+#| label: data_transform
+
+#| label: data_transform
+
+# RECODE KEY VARIABLES (Shared across both datasets)
+# These do NOT have suffixes because they were used to merge.
+
+# Binary Factors
+binary_map = list(
+  school   = list(lv = c("GP", "MS"), 
+                  lb = c("0 - Gabriel Pereira", "1 - Mousinho da Silveira")),
+  sex      = list(lv = c("F", "M"),   
+                  lb = c("0 - Female", "1 - Male")),
+  address  = list(lv = c("U", "R"),   
+                  lb = c("0 - Urban", "1 - Rural")),
+  famsize  = list(lv = c("LE3", "GT3"), 
+                  lb = c("0 - <=3 members", "1 - >3 members")),
+  Pstatus  = list(lv = c("A", "T"),   
+                  lb = c("0 - Apart", "1 - Living together")),
+  nursery  = list(lv = c("no", "yes"), 
+                  lb = c("0 - No", "1 - Yes")),
+  internet = list(lv = c("no", "yes"), 
+                  lb = c("0 - No", "1 - Yes")),
+  higher   = list(lv = c("no", "yes"), lb = c("0 - No", "1 - Yes")),
+  activities = list(lv = c("no", "yes"), 
+                    lb = c("0 - No", "1 - Yes")),
+  romantic   = list(lv = c("no", "yes"), 
+                    lb = c("0 - No", "1 - Yes"))
+)
+
+for (v in names(binary_map)) {
+  d_combined[[v]] = factor(d_combined[[v]], 
+                           levels = binary_map[[v]]$lv, 
+                           labels = binary_map[[v]]$lb)
+}
+
+# Nominal Factors
+d_combined$Mjob = factor(d_combined$Mjob, 
+                         levels = c("at_home", "health", "other", 
+                                    "services", "teacher"),
+                         labels = c("0 - At home", "1 - Health", 
+                                    "2 - Other", "3 - Services", "4 - Teacher"))
+d_combined$Fjob = factor(d_combined$Fjob, 
+                         levels = c("at_home", "health", "other", 
+                                    "services", "teacher"),
+                         labels = c("0 - At home", "1 - Health", 
+                                    "2 - Other", "3 - Services", "4 - Teacher"))
+d_combined$reason = factor(d_combined$reason, 
+                           levels = c("course", "home", "other", "reputation"),
+                           labels = c("0 - Course preference", 
+                                      "1 - Close to home", "2 - Other", 
+                                      "3 - School reputation"))
+d_combined$guardian = factor(d_combined$guardian, 
+                             levels = c("mother", "father", "other"),
+                             labels = c("0 - Mother", 
+                                        "1 - Father", "2 - Other"))
+
+# Ordered Factors (Shared)
+edu_levels = c("0 - None", "1 - Primary (4th grade)", "2 - 5th-9th grade", 
+               "3 - Secondary", "4 - Higher education")
+d_combined$Medu = factor(d_combined$Medu, 
+                         levels = 0:4, 
+                         labels = edu_levels, 
+                         ordered = TRUE)
+d_combined$Fedu = factor(d_combined$Fedu, 
+                         levels = 0:4, 
+                         labels = edu_levels, 
+                         ordered = TRUE)
+
+d_combined$traveltime = factor(d_combined$traveltime, 
+                               levels = 1:4, 
+                               labels = c("1 - <15 min", "2 - 15-30 min", 
+                                          "3 - 30 min-1 h", "4 - >1 h"), 
+                               ordered = TRUE)
+d_combined$studytime = factor(d_combined$studytime, 
+                              levels = 1:4, 
+                              labels = c("1 - <2 h", "2 - 2-5 h", 
+                                         "3 - 5-10 h", "4 - >10 h"), 
+                              ordered = TRUE)
+
+# Shared Likert Scales (1-5)
+likert_vars = list(
+  famrel = c("very bad", "excellent"),
+  freetime = c("very low", "very high"),
+  goout = c("very low", "very high"),
+  Dalc = c("very low", "very high"),
+  Walc = c("very low", "very high"),
+  health = c("very bad", "very good")
+)
+
+for (v in names(likert_vars)) {
+  d_combined[[v]] = factor(d_combined[[v]], 
+                           levels = 1:5, 
+                           ordered = TRUE,
+                           labels = 
+                             c(paste0("1 - ", likert_vars[[v]][1]), "2", 
+                                      "3", "4", 
+                               paste0("5 - ", likert_vars[[v]][2])))
+}
+
+# RECODE SUBJECT-SPECIFIC VARIABLES
+# These DO have suffixes because they differed between files
+for (sfx in c(".mat", ".por")) {
+  
+  # Failures
+  d_combined[[paste0("failures", sfx)]] = 
+    factor(d_combined[[paste0("failures", sfx)]],
+           levels = 0:3, 
+           ordered = TRUE,
+           labels = c("0 - 0", "1 - 1", "2 - 2", "3 - 3+"))
+  
+  for (v in c("schoolsup", "famsup", "paid")) {
+    d_combined[[paste0(v, sfx)]] = factor(d_combined[[paste0(v, sfx)]],
+                                         levels = c("no", "yes"),
+                                         labels = c("0 - No", "1 - Yes"))
+  }
+}
+
+```
+
+
+
+## Research Question - General Formulation
+
+**"Personal Agency vs. Environmental Determinism: To what extent do student-driven behavioral choices predict academic success compared to structural and environmental constraints?"**
+
+**Variable selection**
+```{r}
+#| label: analysis_variable_selection
+
+# General Variables
+general_vars = c("school", "sex", "age")
+
+# Behavioral: Choices and habits 
+behavioural_vars = c("goout", "activities", "Dalc", "Walc", 
+                     "studytime", "romantic")
+
+# Structural: Background and constraints 
+structural_vars = c("address", "famsize", "Pstatus", "Medu", 
+                    "Fedu", "traveltime", "health")
+
+
+# Function to create subject-specific data
+prepare_subject_data = function(df, subject_suffix) {
+  # Shared columns do not have suffixes because they were used as keys in merge
+  shared_cols = c(general_vars, behavioural_vars, structural_vars)
+  
+  # Only G3 (the target) has suffix
+  target_cols = c(shared_cols, paste0("G3", subject_suffix))
+  
+  df_sub = df[, target_cols]
+  colnames(df_sub) = gsub(subject_suffix, "", colnames(df_sub), fixed = TRUE)
+  return(df_sub)
+}
+
+# Create more specific datasets
+d_mat_analysis = prepare_subject_data(d_combined, ".mat")
+d_por_analysis = prepare_subject_data(d_combined, ".por")
+
+```
+
+
+
+## Initial Data Analysis
+
+### IDA Screening: Missing values
+```{r}
+#| label: ida_missing_values
+
+# All predictor variables are shared (merge keys) - only G3 differs by subject
+# Build a single unified view: shared vars once + G3 for each subject
+shared_vars_ida = setdiff(names(d_mat_analysis), "G3")
+d_unified_ida = d_mat_analysis[, shared_vars_ida]
+d_unified_ida$G3_Math = d_mat_analysis$G3
+d_unified_ida$G3_Por = d_por_analysis$G3
+
+d_unified_ida |>
+  miss_var_summary() |>
+  gt() |>
+  tab_header(
+    title    = "Missing Value Summary",
+    subtitle = "Predictor variables are shared across subjects; 
+    G3 shown separately per subject")
+
+```
+
+**Zero-values - These are valid encoded values but worth flagging as potential edge cases**
+```{r}
+#| label: ida_zero_check
+
+# Medu / Fedu are shared (merge keys) -> one count suffices
+# G3 may differ by subject -> shown separately
+zero_summary = data.frame(
+  Variable = c("Medu = None", "Fedu = None", "G3 = 0 (Math)", 
+               "G3 = 0 (Portuguese)"),
+  N = c(sum(d_mat_analysis$Medu == "0 - None"),
+        sum(d_mat_analysis$Fedu == "0 - None"),
+        sum(d_mat_analysis$G3 == 0),
+        sum(d_por_analysis$G3 == 0)))
+
+zero_summary |>
+  gt() |>
+  tab_header(
+    title    = "Zero / Baseline Value Counts",
+    subtitle = "Medu & Fedu: parents with no education; 
+    G3: students scoring 0") |>
+  cols_label(Variable = "Variable", N = "n")
+
+```
+
+
+### IDA Screening: Univariate descriptions
+
+**Categorical variables**
+```{r}
+#| label: ida_univariate_categorical
+#| fig-width: 10
+#| fig-height: 30
+
+cat_vars = c("school", "sex", "address", "famsize", "Pstatus",
+             "Medu", "Fedu", "traveltime", "studytime",
+             "activities", "romantic",
+             "goout", "Dalc", "Walc", "health")
+
+subj_cols = viridis(2, option = VIR_PAL, begin = 0.1, end = 0.5)
+
+make_cat_plot = function(df, var, fill_col) {
+  ggplot(df, aes(x = .data[[var]])) +
+    geom_bar(fill = fill_col, color = "white", width = 0.7) +
+    geom_text(stat = "count", aes(label = after_stat(count)),
+              vjust = -0.5, size = 4, color = "grey20") +
+    scale_y_continuous(expand = expansion(mult = c(0, 0.18))) +
+    theme(axis.text.x = element_text(angle = 35, hjust = 1, size = 10),
+          axis.text.y = element_text(size = 10),
+          panel.grid.major.x = element_blank(),
+          plot.title= element_text(size = 12, face = "bold")) +
+    labs(title = var, x = NULL, y = NULL)
+}
+
+plots_shared = lapply(cat_vars, make_cat_plot,
+                      df = d_mat_analysis, fill_col = subj_cols[1])
+
+wrap_plots(plots_shared, ncol = 2) +
+  plot_annotation(
+    title = "Univariate Distributions - Categorical Variables",
+    subtitle = "Shared across Math & Portuguese (overlapping students only)",
+    theme = theme(plot.title = element_text(size = 16, face = "bold", 
+                                                  hjust = 0.5),
+                     plot.subtitle = element_text(size = 12, hjust = 0.5)))
+
+```
+
+**Continuous variables**
+```{r}
+#| label: ida_univariate_continuous
+#| fig-width: 12
+#| fig-height: 10
+
+make_hist = function(df, var, fill_col, subject, binw = 1) {
+  ggplot(df, aes(x = .data[[var]])) +
+    geom_histogram(binwidth = binw, fill = fill_col,
+                   color = "white", alpha = 0.9) +
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank(),
+          axis.text = element_text(size = 10),
+          plot.title = element_text(size = 12, face = "bold")) +
+    labs(title = paste0(var, " - ", subject), x = var, y = NULL)
+}
+
+p_age = make_hist(d_mat_analysis, "age", subj_cols[1], "Shared",
+                     binw = 1)
+p_g3_mat = make_hist(d_mat_analysis, "G3", subj_cols[1], "Math", 
+                     binw = 1)
+p_g3_por = make_hist(d_por_analysis, "G3", subj_cols[2], "Portuguese", 
+                     binw = 1)
+
+(p_age / (p_g3_mat | p_g3_por)) +
+  plot_annotation(
+    title = "Univariate Distributions — Continuous Variables",
+    theme = theme(plot.title = element_text(size = 16, face = "bold", 
+                                            hjust = 0.5)))
+
+```
+
+
+```{r}
+#| label: ida_continuous_summary
+
+make_desc_table = function(df, title) {
+  vars <- names(df)
+  psych::describe(df) |>
+    select(mean, sd, median, min, max) |>
+    mutate(IQR = sapply(vars, function(v) IQR(df[[v]], na.rm = TRUE))) |>
+    select(mean, sd, median, IQR, min, max) |>
+    as.data.frame() |>
+    rownames_to_column("variable") |>
+    gt() |>
+    tab_header(title = title) |>
+    fmt_number(columns = where(is.double), decimals = 2) |>
+    as_raw_html()
+}
+
+# Age is shared — describe once.
+# G3 differs by subject — include both in a single table.
+cont_vars_unified = data.frame(
+  age = d_mat_analysis$age,       # identical in both datasets
+  G3_Mat = d_mat_analysis$G3,
+  G3_Por = d_por_analysis$G3
+)
+
+HTML(make_desc_table(cont_vars_unified,
+                     "Continuous Variables - Shared (age) & Per Subject (G3)"))
+
+```
+
+
+
