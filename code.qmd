@@ -12,6 +12,8 @@ format:
     embed-resources: true
     theme: "lux"
     css: styles.css
+    code-fold: true
+    code-summary: "Show code"
 execute: 
   warning: false
   message: false
@@ -276,8 +278,8 @@ We work on both Mathematics and Portuguese - so we merged them.
 ```{r}
 #| label: data_merge
 
-# NOTE: we used bigger set of variables than in the description of the seminar,
-# because we saw that in the case of using the smaller set, we get 
+# NOTE: we used bigger set of variables than in the description of the 
+# seminar,because we saw that in the case of using the smaller set, we get 
 # non-consistent rows, so two rows in mat and por with the same signature
 # gave different responses to e.g. activities
 d_combined = merge(d_mat, d_por, 
@@ -526,7 +528,8 @@ make_zero_summary = function(df, subject) {
               mean_Walc = mean(as.numeric(Walc)),
               mean_Medu = mean(as.numeric(Medu)),
               mean_Fedu = mean(as.numeric(Fedu))) |> gt() |>
-    tab_header(title = paste("Predictor Means: G3 = 0 vs G3 > 0 —", subject)) |>
+    tab_header(title = 
+                 paste("Predictor Means: G3 = 0 vs G3 > 0 —", subject)) |>
     fmt_number(columns = where(is.double), decimals = 2)
 }
 
@@ -654,17 +657,17 @@ p_hlth = make_bar("health", "Health Status", pal_ord[8])
 
 ```
 
-For **Medu and Fedu**, we can note that in the case of mother's education the distribution is somewhat left-skewed, whereas the distribution for father's education is closer to uniform. We kept this observation until multivariate analysis (where we might retain only one of them).
+**Medu and Fedu**: In the case of mother's education, the distribution is somewhat left-skewed, whereas the distribution for father's education is closer to uniform. This observation was kept until multivariate analysis, where one variable may be prioritized.
 
-For **traveltime**, the distribution is strongly right-skewed. We merged the top two levels into a single "≥30 min" category before model fitting, as the small cell sizes in these strata would produce unstable coefficient estimates.
+**traveltime**: The distribution is right-skewed. The top two levels (16 and 7 observations) were merged into a single ">=30 min" category before model fitting, as small cell sizes in these strata would produce unstable coefficient estimates.
 
-For **studytime**, the distribution is reasonably spread, with the majority studying 2–5 hours per week. The upper level (>10 hours) is the smallest group, but with 23 students it is still sufficient to retain as a separate level.
+**studytime**: The distribution is reasonably spread, with the majority studying 2–5 hours per week. The upper level (>10 hours) is the smallest group with only 23 students - we thought of merging the two top categories, but in the end decided not to because we supposed that this is most likely one of the strongest predictors, and the strata size is small but not extremely.
 
-For **goout**, the distribution is close to symmetric and centered on level 3, with all five levels well-represented.
+**goout**: The distribution is close to symmetric and centered on level 3. Level 1 ("very low") has only 18 students, which is notably sparse relative to the remaining levels. To avoid an unstable estimate for the 1 -> 2 step under successive difference contrasts, levels 1 and 2 were merged into a single "low" category before model fitting.
 
-For **Dalc and Walc**, the distributions differ notably - Dalc is heavily concentrated at "very low" (70.0%), with very sparse counts at levels 4 and 5, whereas Walc is more spread across all levels, but still counts 4 and 5 are a little bit underrepresented. Given their expected collinearity, we kept the decision on merging the upper levels of either variable until the multivariate analysis.
+**Dalc and Walc**: These distributions differ notably; Dalc is heavily concentrated at "very low" (approximately 70.0%), with very sparse counts at levels 4 and 5. Walc is more spread across all levels, with counts for levels 4 and 5 still somewhat underrepresented but sufficient to retain as separate levels. Given their expected collinearity, the decision on retaining or excluding either variable was deferred until multivariate analysis.
 
-For **health**, the distribution is left-skewed. All five levels have reasonable counts.
+**health**: The distribution is left-skewed. All five levels have reasonable counts.
 
 
 ```{r}
@@ -721,15 +724,7 @@ p1 = ggplot(d_mat_analysis, aes(x = sex, y = age)) +
   geom_boxplot() + theme_bw() +
   labs(x = "Sex", y = "Age (years)")
 
-p2 = ggplot(d_mat_analysis, aes(x = sex, y = G3)) +
-  geom_boxplot() + theme_bw() +
-  labs(x = "Sex", y = "G3 — Mathematics")
-
-p3 = ggplot(d_por_analysis, aes(x = sex, y = G3)) +
-  geom_boxplot() + theme_bw() +
-  labs(x = "Sex", y = "G3 — Portuguese")
-
-p4 = ggplot(d_mat_analysis, aes(x = studytime, fill = sex)) +
+p2 = ggplot(d_mat_analysis, aes(x = studytime, fill = sex)) +
   geom_bar(position = "fill") +
   scale_fill_viridis_d(option = VIR_PAL, begin = 0.2, end = 0.7, name = "Sex") +
   scale_y_continuous(labels = scales::label_percent()) +
@@ -737,7 +732,7 @@ p4 = ggplot(d_mat_analysis, aes(x = studytime, fill = sex)) +
   theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
   labs(x = "Study Time", y = "Proportion")
 
-p5 = ggplot(d_mat_analysis, aes(x = goout, fill = sex)) +
+p3 = ggplot(d_mat_analysis, aes(x = goout, fill = sex)) +
   geom_bar(position = "fill") +
   scale_fill_viridis_d(option = VIR_PAL, begin = 0.2, end = 0.7, name = "Sex") +
   scale_y_continuous(labels = scales::label_percent()) +
@@ -745,7 +740,7 @@ p5 = ggplot(d_mat_analysis, aes(x = goout, fill = sex)) +
   theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
   labs(x = "Going Out", y = "Proportion")
 
-p6 = ggplot(d_mat_analysis, aes(x = Walc, fill = sex)) +
+p4 = ggplot(d_mat_analysis, aes(x = Walc, fill = sex)) +
   geom_bar(position = "fill") +
   scale_fill_viridis_d(option = VIR_PAL, begin = 0.2, end = 0.7, name = "Sex") +
   scale_y_continuous(labels = scales::label_percent()) +
@@ -753,7 +748,7 @@ p6 = ggplot(d_mat_analysis, aes(x = Walc, fill = sex)) +
   theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
   labs(x = "Weekend Alcohol", y = "Proportion")
 
-(p1 | p2 | p3) / (p4 | p5 | p6) +
+(p1) / (p2 | p3 | p4) +
   plot_annotation(
     title = "Predictors Stratified by Sex",
     theme = theme(plot.title = element_text(size = 14, 
@@ -761,7 +756,7 @@ p6 = ggplot(d_mat_analysis, aes(x = Walc, fill = sex)) +
 
 ```
 
-Notable observations are: that female student have a little bit worse results in Mathematics and a little bit better results in Portuguese, female students also spent more time studying, and consume smaller amount of alcohol compared to male students in this sample.
+Notable observations are: that female student spent more time studying, and consume smaller amount of alcohol on weekends compared to male students in this sample; especially when it comes to higher amounts of consumption. In terms of age female students are a little bit older and their age is less spread out compared to male students.
 
 #### Stratification by School
 
@@ -772,19 +767,7 @@ Notable observations are: that female student have a little bit worse results in
 
 rot_x = theme(axis.text.x = element_text(angle = 30, hjust = 1))
 
-p1 = ggplot(d_mat_analysis |> mutate(G3_Math = G3),
-            aes(x = school, y = G3_Math)) +
-  geom_boxplot() + theme_bw() +
-  rot_x +
-  labs(x = "School", y = "G3 — Mathematics")
-
-p2 = ggplot(d_por_analysis |> mutate(G3_Por = G3),
-            aes(x = school, y = G3_Por)) +
-  geom_boxplot() + theme_bw() +
-  rot_x +
-  labs(x = "School", y = "G3 — Portuguese")
-
-p3 = ggplot(d_mat_analysis, aes(x = school, fill = Fedu)) +
+p1 = ggplot(d_mat_analysis, aes(x = school, fill = Fedu)) +
   geom_bar(position = "fill") +
   scale_fill_viridis_d(option = VIR_PAL, name = "Father's Edu") +
   scale_y_continuous(labels = scales::label_percent()) +
@@ -792,7 +775,7 @@ p3 = ggplot(d_mat_analysis, aes(x = school, fill = Fedu)) +
   rot_x +
   labs(x = "School", y = "Proportion")
 
-p4 = ggplot(d_mat_analysis, aes(x = school, fill = address)) +
+p2 = ggplot(d_mat_analysis, aes(x = school, fill = address)) +
   geom_bar(position = "fill") +
   scale_fill_viridis_d(option = VIR_PAL, begin = 0.2, end = 0.7,
                        name = "Address") +
@@ -801,7 +784,7 @@ p4 = ggplot(d_mat_analysis, aes(x = school, fill = address)) +
   rot_x +
   labs(x = "School", y = "Proportion")
 
-(p1 | p2 | p3 | p4) +
+(p1 | p2) +
   plot_annotation(
     title = "Predictors Stratified by School",
     theme = theme(plot.title = element_text(size = 14,
@@ -809,7 +792,7 @@ p4 = ggplot(d_mat_analysis, aes(x = school, fill = address)) +
 
 ```
 
-Notable observations are: that students from Mousinho da Silveira have slightly lower median grades in Portuguese, their fathers have somewhat lower education levels, and a significantly larger proportion of them live in rural areas compared to students from Gabriel Pereira in this sample. However, both schools remain largely comparable, with Mousinho da Silveira simply reflecting slightly more pronounced environmental and socioeconomic constraints.
+Notable observations are: that for students from Mousinho da Silveira their fathers have somewhat lower education levels, and a significantly larger proportion of them live in rural areas compared to students from Gabriel Pereira in this sample. However, both schools remain largely comparable, with Mousinho da Silveira simply reflecting slightly more pronounced environmental and socioeconomic constraints.
 
 #### Correlation Between All Predictors
 
@@ -846,7 +829,8 @@ cor_all_df = d_mat_analysis |>
          Goout, Dalc, Walc, Health)
 
 # Use Spearman correlation
-cor_matrix = cor(cor_all_df, use = "pairwise.complete.obs", method = "spearman")
+cor_matrix = cor(cor_all_df, use = "pairwise.complete.obs", 
+                 method = "spearman")
 
 Breaks = seq(-1, 1, by=.01)
 my_palette = c(colorRampPalette(rev(RColorBrewer::brewer.pal(n = 7, 
@@ -860,18 +844,16 @@ pheatmap(cor_matrix, cluster_cols= TRUE, cluster_rows = TRUE,
 
 ```
 
-We observe some expected clusters. The strongest positive correlations are between Mother's Education (`Medu`) and Father's Education (`Fedu`), as well as between Workday Alcohol Consumption (`Dalc`) and Weekend Alcohol Consumption (`Walc`) - what we hypothesized in the beginning. There is also a notable positive association between Walc and Goout (similarly for Dalc and Goout but weaker) - which is expectable given that some of going out activities include alcohol consumption. Additionaly, there is a negative association between `studytime` and `sex` - the observation we made when performing stratification by sex. 
+We observe some expected clusters. The strongest positive correlations are between Mother's Education (`Medu`) and Father's Education (`Fedu`), as well as between Workday Alcohol Consumption (`Dalc`) and Weekend Alcohol Consumption (`Walc`) - what we hypothesized in the beginning. There is also a notable positive association between `Walc` and `Goout` (similarly for `Dalc` and `Goout` but weaker) - which is expectable given that some of going out activities include alcohol consumption. Additionaly, there is a negative association between `studytime` and `sex` - the observation we made when performing stratification by sex. 
 
-To make a final decision of keeping or not keeping all of the variables, we performed Redundancy Analysis.
+To make a final decision of keeping or not keeping all of the variables, we wanted to perform Redundancy Analysis.
 
 #### Redundancy Analysis
-Note that we decreased the number of knots, because 
+Note that we set nk = 0 to suppress spline transformations, as most predictors have only 4 ordinal levels - too few to support non-linear fits. This reduces the redundancy analysis to a linear R² check rather than a full non-linear redundancy assessment.
 
 ```{r}
 #| label: ida_redundancy
 
-# Redundancy analysis including all predictors
-# nk = 0 is critical because many variables have 4-5 levels
 Hmisc::redun(~ age + school + sex + address + famsize + Pstatus + 
                Medu + Fedu + traveltime + internet + health +
                goout + activities + Dalc + Walc + studytime + romantic, 
@@ -879,7 +861,114 @@ Hmisc::redun(~ age + school + sex + address + famsize + Pstatus +
              nk = 0)
 
 ```
+The redundancy analysis showed that no variable exceeds the R^2 = 0.9 redundancy threshold, meaning no predictor can be linearly reconstructed from the remaining variables with sufficient precision to warrant automatic exclusion. The highest R^2 values belong to `Walc` (0.638) and `Dalc` (0.551), reflecting their shared alcohol-consumption construct -- consistent with the strong correlation observed in the heatmap. `Medu` and `Fedu` follow at 0.472 and 0.441 respectively, again expected given their correlation, but well below the redundancy cutoff. All remaining variables have R² below 0.33, indicating they each contribute largely independent information. On these facts alone, no variable would be excluded - however, the decisions were revisited in the IDA conclusions.
 
-We can see that no redundant variables are observed at the default $R^2$ threshold of 0.9. Most importantly, despite the structural overlap between `Medu` and `Fedu`, as well as the behavioral overlap between `Dalc` and `Walc`, each variable retains enough unique variance that they do not need to be excluded prior to model fitting.
+### IDA Conclusions
 
+Based on the screening, three sets of decisions are carried into model fitting.
+
+**Variable exclusion.** `Dalc` is dropped from the analytic models. This decision is not motivated by multicollinearity (which as we have seen is present, but not extreme), rather, the justification is distributional: most of students score at the lowest level, and after collapsing the sparse upper categories the variable would effectively reduce to a near-binary indicator. `Walc`, which is better spread across all five levels and captures the same underlying alcohol consumption construct, is thus kept as the sole alcohol predictor.
+
+**Level recoding**. Two ordinal variables have sparse categories that are collapsed prior to model fitting. For `traveltime`, the top two levels ("30 min–1 h" and ">1 h") are merged into a single ">=30 min" category, as the original cell sizes (16 and 7 observations respectively) were too small to produce meaningful coefficient estimates. For `goout`, levels 1 ("very low", n=18) and 2 are merged into a single "low" category, as the sparse baseline would otherwise produce an unstable estimate for the 1 -> 2 step under successive difference contrasts.
+
+**Underrepresented categories.** Three binary variables show notable imbalance: `school` (only 32 students from Mousinho da Silveira), `Pstatus` (sparse "Apart" category), and `internet` (only 49 students without home access). These variables are kept in the models, as their imbalance is not severe enough to motivate exclusion and each carries plausible theoretical relevance. However, their coefficient estimates should be interpreted with caution - the contrast groups are small, confidence intervals will be wide, and any effects may be unstable.
+
+Additionally, age is mean-centered in this step - while strictly a modeling preparation rather than an IDA decision, it is applied here since all exclusions are finalized and the mean is therefore computed on the correct analytic sample.
+
+```{r}
+#| label: ida_recodings
+
+# Drop Dalc from behavioural variable list
+behavioural_vars = c("goout", "activities", "Walc", "studytime", "romantic")
+
+# Collapse traveltime: merge levels 3 and 4 into "3 - >=30 min"
+d_combined$traveltime = fct_collapse(
+  d_combined$traveltime,
+  "3 - >=30 min" = c("3 - 30 min-1 h", "4 - >1 h"))
+d_combined$traveltime = droplevels(d_combined$traveltime)
+
+# Reapply successive difference contrasts after level change
+contrasts(d_combined$traveltime) = MASS::contr.sdif(
+  length(levels(d_combined$traveltime)))
+
+# Collapse goout: merge levels 1 and 2 into "1 - low"
+d_combined$goout = fct_collapse(
+  d_combined$goout,
+  "1 - low" = c("1 - very low", "2"))
+d_combined$goout = droplevels(d_combined$goout)
+
+# Reapply successive difference contrasts after level change
+contrasts(d_combined$goout) = MASS::contr.sdif(
+  length(levels(d_combined$goout)))
+
+# Center the age
+d_combined$age = d_combined$age - mean(d_combined$age)
+
+# Regenerate analytic datasets with updated variable list and recodings
+d_mat_analysis = prepare_subject_data(d_combined, ".mat")
+d_por_analysis = prepare_subject_data(d_combined, ".por")
+
+```
+
+### Final Summary Before Analysis
+
+```{r}
+#| label: ida_final_summary
+
+
+var_summary = tribble(
+  ~Group, ~Variable, ~Type,~Levels,
+  "General", "school", "Binary",
+  paste(levels(d_combined$school), collapse = " / "),
+  "General", "sex", "Binary",   
+  paste(levels(d_combined$sex), collapse = " / "),
+  "General", "age", "Numeric", 
+  "15-22 (mean-centered)",
+  "Behavioural", "goout", "Ordinal",  
+  paste(levels(d_combined$goout), collapse = " / "),
+  "Behavioural", "activities", "Binary",   
+  paste(levels(d_combined$activities), collapse = " / "),
+  "Behavioural", "Walc", "Ordinal",  
+  paste(levels(d_combined$Walc), collapse = " / "),
+  "Behavioural", "studytime", "Ordinal",  
+  paste(levels(d_combined$studytime), collapse = " / "),
+  "Behavioural", "romantic", "Binary",   
+  paste(levels(d_combined$romantic), collapse = " / "),
+  "Structural", "address", "Binary",   
+  paste(levels(d_combined$address), collapse = " / "),
+  "Structural", "famsize", "Binary",   
+  paste(levels(d_combined$famsize), collapse = " / "),
+  "Structural", "Pstatus", "Binary",  
+  paste(levels(d_combined$Pstatus), collapse = " / "),
+  "Structural", "Medu", "Ordinal",  
+  paste(levels(d_combined$Medu), collapse = " / "),
+  "Structural", "Fedu", "Ordinal",  
+  paste(levels(d_combined$Fedu), collapse = " / "),
+  "Structural", "traveltime", "Ordinal",  
+  paste(levels(d_combined$traveltime), collapse = " / "),
+  "Structural", "internet", "Binary",   
+  paste(levels(d_combined$internet), collapse = " / "),
+  "Structural", "health", "Ordinal",  
+  paste(levels(d_combined$health), collapse = " / "),
+  "Outcome", "G3", "Numeric",  
+  "1-20"
+)
+
+var_summary |>
+  gt(groupname_col = "Group") |>
+  tab_header(
+    title = "Final Analytic Variable Set",
+    subtitle = paste0("n = ", nrow(d_combined), " observations")) |>
+  cols_label(
+    Variable = "Variable",
+    Type = "Type",
+    Levels = "Levels / Range") |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_row_groups()) |>
+  tab_style(
+    style = cell_text(style = "italic"),
+    locations = cells_body(columns = Variable))
+
+```
 
