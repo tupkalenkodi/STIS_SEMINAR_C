@@ -10,13 +10,8 @@ forcats
 lubridate
 naniar
 Hmisc
-kableExtra
-GGally
 gt
-reshape2
-htmltools
 patchwork
-psych
 viridisLite
 viridis
 pheatmap
