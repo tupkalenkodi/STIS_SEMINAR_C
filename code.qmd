@@ -610,7 +610,7 @@ p_g3_por = ggplot(d_por_analysis, aes(x = G3)) +
 (p_age | p_g3_mat | p_g3_por) +
   plot_annotation(
     title    = "Univariate Distributions - Continuous Variables",
-    theme    = theme(plot.title = element_text(size = 14,
+    theme    = theme(plot.title = element_text(size = 20,
                                                face = "bold", hjust = 0.5)))
 
 ```
@@ -702,7 +702,7 @@ p_hlth = make_bar("health", "Health Status", pal_ord[8])
 (p_go | p_dalc | p_walc | p_hlth) +
   plot_annotation(
     title = "Univariate Distributions - Ordinal Variables",
-    theme = theme(plot.title = element_text(size = 14,
+    theme = theme(plot.title = element_text(size = 20,
                                             face = "bold", hjust = 0.5)))
 
 ```
@@ -762,7 +762,7 @@ p_net = make_bar("internet", "Internet at Home", pal_bin[8])
 (p_fsz | p_act | p_rom | p_net) +
   plot_annotation(
     title = "Univariate Distributions - Binary Variables",
-    theme = theme(plot.title = element_text(size = 14,
+    theme = theme(plot.title = element_text(size = 20,
                                             face = "bold", hjust = 0.5)))
 
 ```
@@ -846,7 +846,7 @@ p4 = ggplot(d_mat_plot, aes(x = Walc, fill = sex)) +
 (p1) / (p2 | p3 | p4) +
   plot_annotation(
     title = "Predictors Stratified by Sex",
-    theme = theme(plot.title = element_text(size = 14, 
+    theme = theme(plot.title = element_text(size = 25, 
                                             face = "bold", hjust = 0.5)))
 
 ```
@@ -898,7 +898,7 @@ p4 = ggplot(d_mat_analysis, aes(x = school, fill = address)) +
 (p1) / (p2 | p3 | p4) +
   plot_annotation(
     title = "Predictors Stratified by School",
-    theme = theme(plot.title = element_text(size = 14,
+    theme = theme(plot.title = element_text(size = 25,
                                             face = "bold", hjust = 0.5)))
 
 ```
@@ -1453,7 +1453,7 @@ make_diag_plots = function(model, title_str) {
   (p_res | p_qq) / (p_sl | p_lev) +
     plot_annotation(
       title = title_str,
-      theme = theme(plot.title = element_text(size = 14,
+      theme = theme(plot.title = element_text(size = 25,
                                               face = "bold", hjust = 0.5)))
 }
 
@@ -1568,9 +1568,9 @@ p_age = ggplot(d_mat_analysis, aes(x = age, y = G3)) +
     subtitle = "white diamond marks the group mean; 
     black line marks the median; 
     orange line denote smoothed by loess line",
-    theme = theme(plot.title = element_text(size = 14, 
+    theme = theme(plot.title = element_text(size = 25, 
                                             face = "bold", hjust = 0.5),
-                  plot.subtitle = element_text(size = 14, 
+                  plot.subtitle = element_text(size = 23, 
                                               colour = "grey40", hjust = 0.5)))
 
 ```
@@ -1627,9 +1627,9 @@ p_age_por = ggplot(d_por_analysis, aes(x = age, y = G3)) +
     subtitle = "white diamond marks the group mean; 
     black line marks the median;
     orange line denote smoothed by loess line",
-    theme = theme(plot.title = element_text(size = 14, 
+    theme = theme(plot.title = element_text(size = 25, 
                                             face = "bold", hjust = 0.5),
-                  plot.subtitle = element_text(size = 14, 
+                  plot.subtitle = element_text(size = 23, 
                                               colour = "grey40", hjust = 0.5)))
 
 ```
