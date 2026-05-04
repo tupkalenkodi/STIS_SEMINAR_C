@@ -652,7 +652,7 @@ kept it.
 #### Categorical Variables
 
 Note that the value of variables for Mathematics and Portuguese are the
-same. So below we use data for Mathematics, but it completely similar
+same. So below we use data for Mathematics, but it is completely similar
 for Portuguese.
 
 ```{r}
@@ -1519,11 +1519,14 @@ these, we examine the relationship with the final grade graphically.
 d_mat_plot2 = d_mat_analysis |>
   mutate(
     health = factor(health, levels = 1:5,
-                    labels = c("1 - very bad", "2", "3", "4", "5 - very good")),
+                    labels = c("1 - very bad", "2", "3", 
+                               "4", "5 - very good")),
     goout = factor(goout, levels = 1:5,
-                   labels = c("1 - very low", "2", "3", "4", "5 - very high")),
+                   labels = c("1 - very low", "2", "3", 
+                              "4", "5 - very high")),
     Walc = factor(Walc, levels = 1:5,
-                  labels = c("1 - very low", "2", "3", "4", "5 - very high")))
+                  labels = c("1 - very low", "2", "3", 
+                             "4", "5 - very high")))
 
 p_health = ggplot(d_mat_plot2, aes(x = health, y = G3)) +
   geom_boxplot(fill = viridis(1, option = VIR_PAL,
@@ -1635,21 +1638,22 @@ For **health** in both Mathematics and Portugues, the pattern is
 non-monotone --- grades drop at level 3 (good health), and then go up.
 The negative linear coefficient in the model is therefore not something
 meaningful. For **going out** and **weekend alcohol**, the relationship
-seem to be relatively linear (there are deviations, `goout` has a
-jump from very low to low; but we think they are negligible given the
+seem to be relatively linear (there are deviations, `goout` has a jump
+from very low to low; but we think they are negligible given the
 significance and results being consistent with the expectations). For
 **age**, the loess and linear fits are very close for Mathematics, but
 for Portuguese we see a drastic drop at the right tail --- which is
 driven by outlier with grade 5.
 
-As a consequence, the most defensible correction would be for health (and maybe goout) to
-encode them as ordered factor with successive difference contrasts, as was
-done for studytime. However, as we discussed in the analysis plan this
-yields 4 (8) more coefficients, which we were not sure we could afford with
-this sample size; if we decided to encode all of the ordinal factors in
-this way, we would overwhelm the model --- so we should have treated
-some of the ordinals as numeric anyway --- and we did not expect that
-health has a non-linear pattern.
+As a consequence, the most defensible correction would be for health
+(and maybe goout) to encode them as ordered factor with successive
+difference contrasts, as was done for studytime. However, as we
+discussed in the analysis plan this yields 4 (8) more coefficients,
+which we were not sure we could afford with this sample size; if we
+decided to encode all of the ordinal factors in this way, we would
+overwhelm the model --- so we should have treated some of the ordinals
+as numeric anyway --- and we did not expect that health has a non-linear
+pattern.
 
 But again, looking at it retrospectively, the health should have been
 recoded; and it would most likely remove or explain our finding of
@@ -1666,10 +1670,10 @@ important notes.
 In both subjects, the full model performed better than the structural
 model on every measure. Adjusted R\^2 roughly doubled, and AIC dropped
 by about 20 points. The behavioral patterns were clear: spending more
-time **going out** was linked to lower grades, while increasing **study time**
-from moderate (2–5 hours) to higher levels (5–10 hours) per week led to
-the largest improvement in grades. These patterns were consistent across
-subjects and models, which makes them more convincing.
+time **going out** was linked to lower grades, while increasing **study
+time** from moderate (2–5 hours) to higher levels (5–10 hours) per week
+led to the largest improvement in grades. These patterns were consistent
+across subjects and models, which makes them more convincing.
 
 Structural variables, on the other hand, mostly did not show strong
 effects. Family background, parental education, travel time, and
@@ -1701,22 +1705,25 @@ limitations should be kept in mind.
 
 **Low absolute explanatory power.** Even the best-performing model ---
 the full Portuguese model --- explains only 18.7% of the variance in
-final grades (Adj. R\^2 = 0.187). 
+final grades (Adj. R\^2 = 0.187).
 
-**Correlational design.** All inferences are associational. 
+**Correlational design.** All inferences are associational.
 
-**Self-report bias.** All behavioral variables
-(alcohol consumption, study time, going out, ...) are self-reported.
+**Self-report bias.** All behavioral variables (alcohol consumption,
+study time, going out, ...) are self-reported.
 
 **Sample scope and generalisability.** The analytic sample consists of
 327 students from two schools in Portugal. Both schools are located in
 the same region, the sample is heavily urban, and the data are
 disproportionately drawn from Gabriel Pereira, with only 32 students
-from Mousinho da Silveira. 
+from Mousinho da Silveira.
 
-**Health encoding and the counterintuitive negative association.** The consistent negative link between self-reported health and grades across all four models is most likely due to how the variable was coded, rather than a real effect.
+**Health encoding and the counterintuitive negative association.** The
+consistent negative link between self-reported health and grades across
+all four models is most likely due to how the variable was coded, rather
+than a real effect.
 
 **Small or sparse contrast groups.** Several binary predictors have
 severely imbalanced distributions: only 32 students attend Mousinho da
 Silveira, only 49 students lack home internet access, and the "Apart"
-category for parental status is sparsely populated. 
+category for parental status is sparsely populated.
