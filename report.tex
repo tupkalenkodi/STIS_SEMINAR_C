@@ -8,7 +8,9 @@
 \usepackage{lipsum}
 \usepackage{cmbright}
 \usepackage[T1]{fontenc}
-\usepackage{tabularx} 
+\usepackage{tabularx}
+\usepackage{array}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
 \usepackage{multirow}
 \usepackage{bm}
 \usepackage[colorlinks=true, linkcolor=red, urlcolor=blue, citecolor=red]{hyperref}
@@ -145,7 +147,7 @@ There were no NAs in this dataset. However there were some valid encodings that 
 \begin{table}[h!]
 \centering
 \small
-\begin{tabular}{lc}
+\begin{tabularx}{\linewidth}{lC}
 \toprule
 \multicolumn{2}{l}{\textit{Zero / Baseline Value Counts}} \\
 \multicolumn{2}{l}{\footnotesize \texttt{Medu} \& \texttt{Fedu}: parents with no education; \texttt{G3}: students scoring 0} \\
@@ -157,8 +159,7 @@ There were no NAs in this dataset. However there were some valid encodings that 
 \texttt{G3} = 0 (Mathematics)   & 35 \\
 \texttt{G3} = 0 (Portuguese)    & 5  \\
 \bottomrule
-\end{tabular}
-\label{tab:zero_counts}
+\end{tabularx}
 \end{table}
 
 The first observation we could make is that for Medu = None and Fedu = None looking at the records, we could not understand whether these really correspond to not having education or they encode something else. Given that the presence of both is very small in the sample, which would even if the encodings are truthful not produce meaningful results (we used incremental contrast factors for these variables) in the model, we decided to exclude these records --- which resulted in 365 observations.
@@ -166,11 +167,10 @@ The first observation we could make is that for Medu = None and Fedu = None look
 \vspace{0.2em}
 The second observation is for G3 being 0, there is no specification in student.txt so we were not sure what is the meaning. We supposed that this corresponds to dropouts from the course, which if true would largely inflate our models; because we wanted to focus on the difference in final grades not whether the student finishes the course. To check the assumption that this corresponds to dropouts, we summarized these cases below.
 
-
 \begin{table}[h!]
 \centering
 \small
-\begin{tabular}{llcccccccc}
+\begin{tabularx}{\linewidth}{llCCCCCCCC}
 \toprule
 & & & \multicolumn{7}{c}{\textbf{Predictor Means}} \\
 \cmidrule(lr){4-10}
@@ -182,8 +182,7 @@ The second observation is for G3 being 0, there is no specification in student.t
 \multirow{2}{*}{Portuguese}  & $G3 = 0$ &   5 & 18.20 & 1.20 & 3.00 & 2.40 & 3.20 & 3.40 & 2.80 \\
                              & $G3 > 0$ & 365 & 16.55 & 2.05 & 3.12 & 1.47 & 2.28 & 3.81 & 3.57 \\
 \bottomrule
-\end{tabular}
-\label{tab:zero_means}
+\end{tabularx}
 \end{table}
 
 What we observed is that, first in the Mathematics dataset, we observed that 12  students with a final grade of zero (G3 = 0) also lack recorded grades for the second period (G2) (for sake of space the full table is not reported here, just the number). Second, among their observable characteristics there is nothing indicating that these are some special group of students --- there are differences especially among Portuguese students; but they are just other indicators that these students are dropouts (e.g. higher alcohol consumption --- which is the characteristic that, we think, is generally agreed to be associated with not finishing some duty -\> dropping out). So, this pattern suggests that these cases most likely correspond to students who dropped out. As we discussed before, keeping them would distort the analysis, so, we excluded these observations --- which resulted in 327 observations that we used in the model fitting.
@@ -319,13 +318,13 @@ To make a final decision of keeping or not keeping all of the variables, we perf
 Note that we set number of knots to zero to suppress spline transformations, as most predictors have only 4 ordinal levels --- too few to support non-linear fits. This principally reduces the redundancy analysis to a linear check, which gives information similar to multicollinearity we peformed in the previous subsection, but adds "directions" so we can understnad exactly which of the correlated variables can be explained more.
 
 \vspace{0.5em} \noindent
-\begin{tabularx}{\textwidth}{Xr Xr Xr Xr Xr Xr}
+\begin{tabularx}{\textwidth}{lC lC lC lC lC lC}
 \hline
 Variable & $R^2$ & Variable & $R^2$ & Variable & $R^2$ & Variable & $R^2$ & Variable & $R^2$ & Variable & $R^2$ \\
 \hline
-age        & 0.225 & school    & 0.244 & sex      & 0.207 & address   & 0.233 & famsize  & 0.096 & Pstatus   & 0.122 \\
-Medu       & 0.455 & Fedu      & 0.432 & internet & 0.106 & health    & 0.095 & goout    & 0.262 & traveltime & 0.225 \\
-activities & 0.126 & Dalc      & 0.484 & Walc     & 0.554 & studytime & 0.204 & romantic & 0.118 &           &       \\
+age        & 0.225 & school    & 0.244 & sex       & 0.207 & address   & 0.233 & famsize   & 0.096 & Pstatus    & 0.122 \\
+Medu       & 0.455 & Fedu      & 0.432 & internet  & 0.106 & health    & 0.095 & goout     & 0.262 & traveltime & 0.225 \\
+activities & 0.126 & Dalc      & 0.484 & Walc      & 0.554 & studytime & 0.204 & romantic  & 0.118 &           &       \\
 \hline
 \end{tabularx}
 
@@ -539,7 +538,7 @@ In this subsection we compare the predictive power of the models.
 \begin{table}[h!]
 \centering
 \footnotesize
-\begin{tabularx}{\textwidth}{lrrrrrrr}
+\begin{tabularx}{\textwidth}{lCCCCCCC}
 \toprule
 \textbf{Model (Subject)} & \textbf{AIC} & \textbf{RMSE} & \textbf{MAE} & \textbf{CV-RMSE} & \textbf{CV-MAE} & \textbf{$R^2$} & \textbf{Adj.\ $R^2$} \\
 \midrule
