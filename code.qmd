@@ -1703,27 +1703,23 @@ limitations should be kept in mind.
 
 ### Limitations
 
+
+**Correlational design.** All inferences are associational.
+
 **Low absolute explanatory power.** Even the best-performing model ---
 the full Portuguese model --- explains only 18.7% of the variance in
 final grades (Adj. R\^2 = 0.187).
 
-**Correlational design.** All inferences are associational.
-
 **Self-report bias.** All behavioral variables (alcohol consumption,
 study time, going out, ...) are self-reported.
+
+**Small or sparse contrast groups.** Several binary predictors have
+severely imbalanced distributions: only 32 students attend Mousinho da
+Silveira, only 49 students lack home internet access, and the "Apart"
+category for parental status is sparsely populated.
 
 **Sample scope and generalisability.** The analytic sample consists of
 327 students from two schools in Portugal. Both schools are located in
 the same region, the sample is heavily urban, and the data are
 disproportionately drawn from Gabriel Pereira, with only 32 students
 from Mousinho da Silveira.
-
-**Health encoding and the counterintuitive negative association.** The
-consistent negative link between self-reported health and grades across
-all four models is most likely due to how the variable was coded, rather
-than a real effect.
-
-**Small or sparse contrast groups.** Several binary predictors have
-severely imbalanced distributions: only 32 students attend Mousinho da
-Silveira, only 49 students lack home internet access, and the "Apart"
-category for parental status is sparsely populated.

@@ -1,0 +1,1725 @@
+---
+title: "Seminar: Statistics for Data Science: Group C"
+subtitle: "Personal Agency vs. Environmental Determinism in Academic Success"
+author: "Dmytro Tupkalenko (89252101), Natalia Tashkova (89252098), Yllkë Jashari (89252111)"
+date: "May 2026"
+date-format: "MMMM YYYY"
+format: 
+  html:
+    toc: true
+    toc_float: yes
+    toc_depth: 3
+    embed-resources: true
+    theme: "lux"
+    css: styles.css
+    code-fold: true
+    code-summary: "Show code"
+execute: 
+  warning: false
+  message: false
+  echo: true
+  error: true
+  cache: true
+knitr:
+  opts_chunk:
+    dpi: 300
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+## Setup
+
+```{r}
+#| label: setup
+
+library(tidyverse)
+library(naniar)  
+library(Hmisc)     
+library(gt)
+library(patchwork)
+library(viridis)
+library(pheatmap)
+library(RColorBrewer)
+library(broom)
+
+VIR_PAL = "B"
+theme_set(theme_minimal(base_size = 11))
+setwd("./")
+
+```
+
+## Research Question & Statistical Analysis Plan
+
+### Aim
+
+General Formulation --- Personal Agency vs. Environmental Determinism:
+To what extent do student-driven behavioral choices predict academic
+success in Portuguese and Mathematics compared to structural and
+environmental constraints?
+
+Concrete Formulation ---
+
+1.  Descriptive analysis: what variables accounting for behavioral
+    choices and environmental constraints are associated with the final
+    grade in Portuguese and Mathematics and how strong are these
+    associations.
+
+2.  Predictive analysis: which of the two models, where the first is
+    fitted only on structural and environmental constraints and the
+    second is fitted on both the constraints and the behavioral choices
+    has bigger predictive power.
+
+### Sample Population
+
+Students aged between 15 and 22 that are enrolled in Mathematics and
+Portuguese language courses at two distinct schools (Gabriel Pereira and
+Mousinho da Silveira).
+
+### Variables
+
+Based on our research question, we have selected the following variables
+from both of the datasets for Mathematics and Portuguese (the same
+variables are used in both datasets):
+
+**Outcome:**
+
+-   `G3` --- final grade (numeric: from 0 to 20, output target).
+    -   *Motivation:* This is the definitive measure of academic success
+        for our analysis.
+
+**General:**
+
+-   `sex` --- student's sex (binary: "F" - female or "M" - male).
+
+    -   *Motivation:* Included as a standard demographic control.
+
+-   `age` --- student's age (numeric: from 15 to 22).
+
+    -   *Motivation:* Included as a standard demographic control.
+
+-   `school` --- student's school (binary: "GP" - Gabriel Pereira or
+    "MS" - Mousinho da Silveira).
+
+    -   *Motivation:* Included as an environmental control.
+
+**Behavioral Predictors (Choices and Habits) --- Something that a
+student can control:**
+
+-   `goout` --- going out with friends (ordinal: from 1 -- very low to 5
+    -- very high).
+
+    -   *Motivation:* Represents a student-driven behavioral choice
+        regarding time allocation and social priorities.
+
+-   `activities` --- extra-curricular activities (binary: yes or no).
+
+    -   *Motivation:* Reflects proactive personal agency in seeking
+        non-academic additions and skill-building.
+
+-   `Dalc*` --- workday alcohol consumption (ordinal: from 1 -- very low
+    to 5 -- very high).
+
+    -   *Motivation:* Captures a potentially detrimental personal
+        lifestyle choice that directly impacts daily cognitive function
+        and academic readiness.
+
+-   `Walc*` --- weekend alcohol consumption (ordinal: from 1 -- very low
+    to 5 -- very high).
+
+    -   *Motivation:* Similar to `Dalc`, this isolates weekend social
+        choices that might compete with weekend study or recovery time.
+
+-   `studytime` --- weekly study time (ordinal: 1 -- \<2 hours, 2 -- 2
+    to 5 hours, 3 -- 5 to 10 hours, or 4 -- \>10 hours).
+
+    -   *Motivation:* The most direct proxy for personal agency, effort,
+        and academic discipline.
+
+-   `romantic` --- with a romantic relationship (binary: yes or no).
+
+    -   *Motivation:* Represents a personal commitment that requires an
+        allocation of emotional energy and time, potentially competing
+        with academic focus.
+
+**Structural/Environmental Predictors (Background and Constraints) ---
+something that a student cannot control:**
+
+-   `address` --- student's home address type (binary: "U" -- urban or
+    "R" -- rural).
+
+    -   *Motivation:* Captures geographic structural constraints, such
+        as access to urban resources, libraries, or potential rural
+        isolation.
+
+-   `famsize` --- family size (binary: "LE3" -- less or equal to 3 or
+    "GT3" -- greater than 3).
+
+    -   *Motivation:* An environmental factor that may influence the
+        home study environment.
+
+-   `Pstatus` --- parent's cohabitation status (binary: "T" -- living
+    together or "A" -- apart).
+
+    -   *Motivation:* Reflects foundational family structure and
+        potential home-life stability, which is entirely outside the
+        student's control.
+
+-   `Medu**` --- mother's education (ordinal: 0 -- none, 1 -- primary
+    education (4th grade), 2 –- 5th to 9th grade, 3 –- secondary
+    education or 4 –- higher education).
+
+    -   *Motivation:* A proxy for socioeconomic status and inherited
+        cultural capital within the home environment.
+
+-   `Fedu**` --- father's education (ordinal: 0 -- none, 1 -- primary
+    education (4th grade), 2 –- 5th to 9th grade, 3 –- secondary
+    education or 4 – higher education).
+
+    -   *Motivation:* Similar to `Medu`. Complements mother's education
+        to fully capture the structural intellectual and socioeconomic
+        background provided by the family.
+
+-   `traveltime` --- home to school travel time (ordinal: 1 -- \<15
+    min., 2 -- 15 to 30 min., 3 -- 30 min. to 1 hour, or 4 -- \>1 hour).
+
+    -   *Motivation:* A physical, environmental constraint that dictates
+        how much "dead time" a student experiences, limiting their
+        available hours for study or rest.
+
+-   `internet` --- internet access at home (binary: yes or no)
+
+    -   *Motivation:* Defines access to online-based study materials.
+
+-   `health` --- current health status (ordinal: from 1 -- very bad to 5
+    -- very good).
+
+    -   *Motivation:* An inherent biological constraint that affects a
+        student's baseline capacity to perform, regardless of their
+        willpower or choices.
+
+Note that variables marked with \* and \*\* respectively are
+hypothesized to be strongly associated, but are still included in the
+initial set with the possibility to be ruled out after Initial Data
+Analysis.
+
+### Excluded Variables and Rationale
+
+Remaining variables available in the dataset were intentionally excluded
+to maintain a focus on testing our core hypothesis. Past academic
+performance metrics (`G1`, `G2`, and past `failures`) were removed;
+including these would artificially overwhelm model accuracy.
+Additionally, family metrics (like `Mjob`, `Fjob`, and `guardian`) were
+excluded because we concluded that the proxy for sociometric status
+(Fedu and Medu) were enough and because Mjob and Fjob are just factors
+with type of the job (nominal: "teacher", "health" care related, civil
+"services" (e.g. administrative or police), "at_home" or "other"), they
+do not provide any insight in e.g. family capital or other measurable
+metric. Variables (`schoolsup`, `famsup`, `paid`, `nursery`,
+`higher`,`freetime` `famrel`) were omitted because we could not strictly
+classify them into one of the classes, e.g. attending paid lessons is
+based on desire of the student or parents.
+
+### Statistical Approach
+
+To address our research questions, we will use multiple linear
+regression. We will fit **four models in total** --- two for the
+Mathematics dataset and two for the Portuguese dataset.
+
+#### Model Specifications
+
+For each subject, we define two nested models:
+
+1.  **Structural Model (Base):** This model includes only the inherent
+    demographic controls and constraints.
+    $$G3 = \beta_0 + \sum_{j \in \text{General}} \beta_j X_j + \sum_{k \in \text{Structural}} \beta_k X_k + \epsilon$$
+
+2.  **Full Model (Agency + Environment):** This model adds behavioral
+    predictors to the structural model.
+    $$G3 = \beta_0 + \sum_{j \in \text{General}} \beta_j X_j + \sum_{k \in \text{Structural}} \beta_k X_k + \sum_{l \in \text{Behavioral}} \beta_l X_l + \epsilon$$
+
+#### Evaluation Framework
+
+We will evaluate these models through two lenses:
+
+-   Descriptive Analysis & Interpretation: We will analyze and interpet
+    the coefficients of both models for each subject to determine which
+    specific behaviors or structural factors hold the most weight and
+    how they change when within the two models.
+
+-   Model Comparison & Predictive Power: To determine if adding
+    "Personal Agency" variables improves our ability to predict academic
+    success, we will compare the Structural and Full models using
+    diagnostic plots and three metrics:
+
+    -   AIC (Akaike Information Criterion): To assess model fit.
+    -   RMSE (Root Mean Square Error), MAE (Mean Absolute Error): To
+        provide measures of how close predictions are to actual grades.
+    -   CV-RMSE, CV-MAE: Leave-one-out cross-validated equivalents of
+        the above, computed via the hat-matrix shortcut exact for OLS.
+
+### Handling Ordinal Factors
+
+Ordinal predictors are encoded in two different ways.
+
+`Medu`, `Fedu`, `studytime` and `traveltime` are kept as ordered factors
+with successive difference contrasts. For parental education, the
+categories represent qualitatively distinct thresholds (e.g., no
+education vs. primary is a fundamentally different jump than secondary
+vs. higher), and assuming equal spacing between levels is not justified.
+For studytime and traveltime, the categories represent non-uniform time
+brackets, and a linear encoding would impose an arbitrary metric on a
+coarsely measured constraint.
+
+The remaining ordinal variables --- `goout`, 'Dalc', `Walc`, and
+`health` --- are treated as numeric. These are all symmetric 5-point
+Likert-style scales. Treating each as a single numeric predictor is also
+motivated practically by sample size: 370 (reduced to in IDA 327
+observations). Encoding each Likert variable as a factor would consume
+an additional 8–10, which we cannot afford with this data.
+
+## Data Management
+
+### Import
+
+```{r}
+#| label: data_import
+
+d_mat = read.table("data/student-mat.csv", sep = ";", header = TRUE)
+d_por = read.table("data/student-por.csv", sep = ";", header = TRUE)
+
+cat("Number of students of Mathematics:", nrow(d_mat), "\n")
+cat("Number of students of Portuguese:", nrow(d_por), "\n")
+
+```
+
+### Merge
+
+We work on both Mathematics and Portuguese --- so we merged them.
+
+```{r}
+#| label: data_merge
+
+# NOTE: we used bigger set of variables than in the description of the 
+# seminar,because we saw that in the case of using the smaller set, we get 
+# non-consistent rows, so two rows in mat and por with the same signature
+# gave different responses to e.g. activities
+d_combined = merge(d_mat, d_por, 
+                   by = c("school", "sex", "age", "address", "famsize",
+                          "Pstatus", "Medu", "Fedu", "Mjob", "Fjob",
+                          "reason", "guardian", "traveltime", "studytime",
+                          "activities", "nursery", "higher", "internet",
+                          "romantic", "famrel", "freetime", "goout",
+                          "Dalc", "Walc", "health"),
+                   suffixes = c(".mat", ".por"))
+
+cat("Number of overlapping students:", nrow(d_combined), "\n")
+
+```
+
+### Variable Cleaning & Recoding
+
+```{r}
+#| label: data_transform
+
+# Binary factors
+binary_map = list(
+  school = list(
+    lv = c("GP", "MS"),
+    lb = c("0 - Gabriel Pereira", "1 - Mousinho da Silveira")),
+  sex = list(
+    lv = c("F", "M"),
+    lb = c("0 - Female", "1 - Male")),
+  address = list(
+    lv = c("U", "R"),
+    lb = c("0 - Urban", "1 - Rural")),
+  famsize = list(
+    lv = c("LE3", "GT3"),
+    lb = c("0 - <=3 members", "1 - >3 members")),
+  Pstatus = list(
+    lv = c("A", "T"),
+    lb = c("0 - Apart", "1 - Living together")),
+  activities = list(
+    lv = c("no", "yes"),
+    lb = c("0 - No", "1 - Yes")),
+  romantic = list(
+    lv = c("no", "yes"),
+    lb = c("0 - No", "1 - Yes")),
+  internet = list(
+    lv = c("no", "yes"),
+    lb = c("0 - No", "1 - Yes")))
+
+for (v in names(binary_map)) {
+  d_combined[[v]] = factor(
+    d_combined[[v]],
+    levels = binary_map[[v]]$lv,
+    labels = binary_map[[v]]$lb)
+}
+
+# Ordered factors 
+edu_levels = c(
+  "0 - None",
+  "1 - Primary (4th grade)",
+  "2 - 5th-9th grade",
+  "3 - Secondary",
+  "4 - Higher education"
+)
+
+d_combined$Medu = factor(
+  d_combined$Medu,
+  levels = 0:4,
+  labels = edu_levels,
+  ordered = TRUE)
+
+d_combined$Fedu = factor(
+  d_combined$Fedu,
+  levels = 0:4,
+  labels = edu_levels,
+  ordered = TRUE)
+
+d_combined$traveltime = factor(
+  d_combined$traveltime,
+  levels = 1:4,
+  labels = c(
+    "1 - <15 min",
+    "2 - 15-30 min",
+    "3 - 30 min-1 h",
+    "4 - >1 h"),
+  ordered = TRUE)
+
+d_combined$studytime = factor(
+  d_combined$studytime,
+  levels = 1:4,
+  labels = c(
+    "1 - <2 h",
+    "2 - 2-5 h",
+    "3 - 5-10 h",
+    "4 - >10 h"),
+  ordered = TRUE)
+
+# Define variable groups and subset to analytic datasets
+general_vars  = c("school", "sex", "age")
+behavioural_vars = c("goout", "activities", "Dalc", 
+                     "Walc", "studytime", "romantic")
+structural_vars = c("address", "famsize", "Pstatus", 
+                    "Medu", "Fedu", "traveltime", "internet", "health")
+
+# List of all ordinal variables that need incremental coding
+ordinal_vars = c("Medu", "Fedu", "traveltime", "studytime")
+
+# Apply Successive Difference Contrasts
+for (v in ordinal_vars) {
+  num_levels = length(levels(d_combined[[v]]))
+  contrasts(d_combined[[v]]) = MASS::contr.sdif(num_levels)
+}
+
+prepare_subject_data = function(df, subject_suffix) {
+  shared_cols = c(general_vars, behavioural_vars, structural_vars)
+  df_sub = df[, c(shared_cols, paste0("G3", subject_suffix))]
+  colnames(df_sub) = gsub(subject_suffix, "", colnames(df_sub), fixed = TRUE)
+  return(df_sub)
+}
+
+d_mat_analysis = prepare_subject_data(d_combined, ".mat")
+d_por_analysis = prepare_subject_data(d_combined, ".por")
+
+```
+
+## Initial Data Analysis
+
+### IDA Screening: Missing Values
+
+```{r}
+#| label: ida_missing_values
+
+shared_vars_ida = setdiff(names(d_mat_analysis), "G3")
+d_unified_ida = d_mat_analysis[, shared_vars_ida]
+d_unified_ida$G3_Math = d_mat_analysis$G3
+d_unified_ida$G3_Por = d_por_analysis$G3
+
+d_unified_ida |>
+  miss_var_summary() |>
+  gt() |>
+  tab_header(
+    title = "Missing Value Summary",
+    subtitle = "Predictor variables are shared across subjects; 
+    G3 shown separately per subject")
+
+```
+
+There are no NAs in this dataset.
+
+#### Zero-values (e.g. None in Parent's education)
+
+These are valid encodings, but they are special compared to other values
+--- so we needed to look closer at them.
+
+```{r}
+#| label: ida_zero_check
+
+zero_summary = data.frame(
+  Variable = c("Medu = None", "Fedu = None",
+                "G3 = 0 (Math)", "G3 = 0 (Portuguese)"),
+  N = c(sum(d_mat_analysis$Medu == "0 - None"),
+        sum(d_mat_analysis$Fedu == "0 - None"),
+        sum(d_mat_analysis$G3 == 0),
+        sum(d_por_analysis$G3 == 0)))
+
+zero_summary |>
+  gt() |>
+  tab_header(title = "Zero / Baseline Value Counts", 
+             subtitle = "Medu & Fedu: parents with no education; 
+             G3: students scoring 0") |>
+  cols_label(Variable = "Variable", N = "n")
+
+```
+
+The first observation we could make is that for Medu = None and Fedu =
+None looking at the records, we could not understand whether these
+really correspond to not having education or they encode something else.
+Given that the presence of both is very small in the sample, which would
+even if the encodings are truthful not produce meaningful results (we
+used incremental contrast factors for these variables) in the model, we
+decided to exclude these records.
+
+```{r}
+#| label: data_exclusions
+
+d_combined = d_combined |>
+  filter(Medu != "0 - None", Fedu != "0 - None")
+
+d_combined$Medu = droplevels(d_combined$Medu)
+d_combined$Fedu = droplevels(d_combined$Fedu)
+
+contrasts(d_combined$Medu) = MASS::contr.sdif(length(levels(d_combined$Medu)))
+contrasts(d_combined$Fedu) = MASS::contr.sdif(length(levels(d_combined$Fedu)))
+
+cat("Observations after exclusion:", nrow(d_combined), "\n")
+
+```
+
+The second observation is for G3 being 0, there is no specification in
+student.txt so we were not sure what is the meaning. We supposed that
+this corresponds to dropouts from the course, which if true would
+largely inflate our models; because we wanted to focus on the difference
+in final grades not whether the student finishes the course. To check
+the assumption that this corresponds to dropouts, we summarized these
+cases below.
+
+```{r}
+#| label: ida_zero_g3_investigation
+
+# Pull G1, G2 from d_combined for analytic dataset students 
+g_mat = d_combined |> select(G1 = G1.mat, G2 = G2.mat, G3 = G3.mat)
+g_por = d_combined |> select(G1 = G1.por, G2 = G2.por, G3 = G3.por)
+
+g_mat |> filter(G3 == 0) |> as_tibble() |> print(n = Inf)
+g_por |> filter(G3 == 0) |> as_tibble() |> print(n = Inf)
+
+# Predictor means: G3=0 vs G3>0
+make_zero_summary = function(df, subject) {
+  df |>
+    mutate(zero_g3 = ifelse(G3 == 0, "G3 = 0", "G3 > 0")) |>
+    group_by(zero_g3) |>
+    summarise(n = n(), mean_age = mean(age),
+              mean_studytime = mean(as.numeric(studytime)),
+              mean_goout = mean(as.numeric(goout)),
+              mean_Dalc = mean(as.numeric(Dalc)),
+              mean_Walc = mean(as.numeric(Walc)),
+              mean_Medu = mean(as.numeric(Medu)),
+              mean_Fedu = mean(as.numeric(Fedu))) |> gt() |>
+    tab_header(title = 
+                 paste("Predictor Means: G3 = 0 vs G3 > 0 —", subject)) |>
+    fmt_number(columns = where(is.double), decimals = 2)
+}
+
+make_zero_summary(d_mat_analysis, "Mathematics")
+make_zero_summary(d_por_analysis, "Portuguese")
+
+```
+
+First, in the Mathematics dataset, we observed that a subset of students
+with a final grade of zero (G3 = 0) also lack recorded grades for the
+second period (G2). Additionally, among their observable characteristics
+there is nothing indicating that these are some special group of
+students --- there are differences especially among Portuguese students;
+but they are just other indicators that these students are dropouts
+(e.g. higher alcohol consumption --- which is the characteristic that,
+we think, is generally agreed to be associated with not finishing some
+duty -\> dropping out). So, this pattern suggests that these cases most
+likely correspond to students who dropped out. As we discussed before,
+keeping them would distort the analysis, so, we excluded these
+observations.
+
+```{r}
+#| label: symmetric_exclusion
+
+d_combined = d_combined |> 
+  filter(G3.mat > 0, G3.por > 0)
+
+n_after_sym = nrow(d_combined)
+
+cat("Observations after (G3 > 0 in both):", n_after_sym, "\n")
+
+```
+
+Since we excluded the students from the combined datasets, we needed to
+regenerate the analytic datasets with excluded observations.
+
+```{r}
+#| label: regenerate_analytic_data
+
+d_mat_analysis = prepare_subject_data(d_combined, ".mat")
+d_por_analysis = prepare_subject_data(d_combined, ".por")
+
+```
+
+### IDA Screening: Univariate Descriptions
+
+In this subsection we summarize univariate characteristics of the
+variables we selected.
+
+#### Continuous Variables
+
+```{r}
+#| label: ida_continuous_plots
+#| fig-width: 12
+#| fig-height: 4
+
+p_age = ggplot(d_mat_analysis, aes(x = age)) +
+  geom_histogram(binwidth = 1,
+                 fill = viridis(1, option = VIR_PAL, begin = 0.2),
+                 colour = "white") +
+  geom_vline(xintercept = mean(d_mat_analysis$age), linetype = "dashed") +
+  labs(title = "Age", x = "Age (years)", y = "Count")
+
+p_g3_mat = ggplot(d_mat_analysis, aes(x = G3)) +
+  geom_histogram(binwidth = 1,
+                 fill = viridis(1, option = VIR_PAL, begin = 0.5),
+                 colour = "white") +
+  geom_vline(xintercept = mean(d_mat_analysis$G3), linetype = "dashed") +
+  labs(title = "Final Grade - Mathematics", x = "G3 (1-20)", y = "Count")
+
+p_g3_por = ggplot(d_por_analysis, aes(x = G3)) +
+  geom_histogram(binwidth = 1,
+                 fill = viridis(1, option = VIR_PAL, begin = 0.8),
+                 colour = "white") +
+  geom_vline(xintercept = mean(d_por_analysis$G3), linetype = "dashed") +
+  labs(title = "Final Grade - Portuguese", x = "G3 (1-20)", y = "Count")
+
+(p_age | p_g3_mat | p_g3_por) +
+  plot_annotation(
+    title    = "Univariate Distributions - Continuous Variables",
+    theme    = theme(plot.title = element_text(size = 20,
+                                               face = "bold", hjust = 0.5)))
+
+```
+
+```{r}
+#| label: ida_continuous_hmisc
+
+cont_df = data.frame(Age = d_mat_analysis$age, G3_Math = d_mat_analysis$G3,
+                     G3_Portuguese = d_por_analysis$G3)
+
+s_cont = Hmisc::describe(cont_df, digits = 1)
+attr(s_cont, "descript") = "Continuous variables - overall characteristics"
+Hmisc::html(s_cont)
+
+```
+
+Below is the summary of findings for Contionous variables:
+
+For **Age**, the distribution is concentrated in the 15–18 range, which
+together account for 97.5% of the sample. The mean and median both sit
+at 16–17 years, as expected for secondary school students. The tail
+extends to age 22, with two isolated observations at ages 20 and 22 (one
+student each). The single 22-year-old is a potential anomaly, but in the
+documentation the range is (18-22), so we kept it.
+
+For **G3 - Mathematics**, the distribution is roughly symmetric around
+the median and mean of 12 and grades ranging from 4 to 20. The most
+common grade is 10 (16.2% of students), and the interquartile range
+spans 9-14, suggesting moderate spread.
+
+For **G3 - Portuguese**, the distribution is more concentrated than
+Mathematics, with a mean and median both at 13 and a narrower IQR of
+11–15. The distribution is approximately symmetric but with moderate
+left-skewedness. There is one isolated observation at grade 1, which is
+notably lower than the next minimum of 5 --- this single case grabs
+attention, but given that we already excluded G3 = 0 as dropouts, we
+kept it.
+
+#### Categorical Variables
+
+Note that the value of variables for Mathematics and Portuguese are the
+same. So below we use data for Mathematics, but it is completely similar
+for Portuguese.
+
+```{r}
+#| label: ida_ordinal_plots
+#| fig-width: 14
+#| fig-height: 9
+
+pal_ord = viridis(8, option = VIR_PAL, begin = 0.1, end = 0.9)
+
+# Labeled copy for plotting only — does not affect analytic datasets
+d_mat_plot = d_mat_analysis |>
+  mutate(goout = factor(goout, levels = 1:5,
+                        labels = c("1 - very low", "2", "3", 
+                                   "4", "5 - very high")),
+         Dalc = factor(Dalc, levels = 1:5,
+                       labels = c("1 - very low", "2", "3",
+                                  "4", "5 - very high")),
+         Walc = factor(Walc, levels = 1:5,
+                       labels = c("1 - very low", "2", "3", 
+                                  "4", "5 - very high")),
+         health = factor(health, levels = 1:5,
+                       labels = c("1 - very bad", "2", "3", 
+                                  "4", "5 - very good")))
+
+# Reusable function to make bar plots
+make_bar = function(var, title, fill_col) {
+  ggplot(d_mat_plot, aes(x = .data[[var]])) +
+    geom_bar(fill = fill_col, colour = "white", width = 0.7) +
+    geom_text(stat = "count", aes(label = after_stat(count)),
+              vjust = -0.4, size = 3.2, colour = "grey20") +
+    scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+    theme(axis.text.x  = element_text(angle = 30, hjust = 1),
+          panel.grid.major.x = element_blank()) +
+    labs(title = title, x = NULL, y = "Count")
+}
+
+p_medu = make_bar("Medu", "Mother's Education", pal_ord[1])
+p_fedu = make_bar("Fedu", "Father's Education", pal_ord[2])
+p_tt = make_bar("traveltime", "Travel Time", pal_ord[3])
+p_st = make_bar("studytime", "Weekly Study Time", pal_ord[4])
+p_go = make_bar("goout", "Going Out with Friends", pal_ord[5])
+p_dalc = make_bar("Dalc", "Workday Alcohol Consumption", pal_ord[6])
+p_walc = make_bar("Walc", "Weekend Alcohol Consumption", pal_ord[7])
+p_hlth = make_bar("health", "Health Status", pal_ord[8])
+
+(p_medu | p_fedu | p_tt | p_st) /
+(p_go | p_dalc | p_walc | p_hlth) +
+  plot_annotation(
+    title = "Univariate Distributions - Ordinal Variables",
+    theme = theme(plot.title = element_text(size = 20,
+                                            face = "bold", hjust = 0.5)))
+
+```
+
+Below is the summary of findings for Categorical variables:
+
+**Medu and Fedu**: In the case of mother's education, the distribution
+is somewhat left-skewed, whereas the distribution for father's education
+is closer to uniform. This observation was kept until multivariate
+analysis, where one variable may be prioritized.
+
+**traveltime**: The distribution is right-skewed. The top two levels (16
+and 7 observations) were merged into a single "\>=30 min" category
+before model fitting, as small cell sizes in these strata would produce
+unstable coefficient estimates.
+
+**studytime**: The distribution is reasonably spread, with the majority
+studying 2–5 hours per week. The upper level (\>10 hours) is the
+smallest group with only 23 students - we thought of merging the two top
+categories, but in the end decided not to because we supposed that this
+is most likely one of the strongest predictors, and the strata size is
+small but not extremely.
+
+**goout**: The distribution is close to symmetric and centered on level
+3. Level 1 ("very low") has only 18 students, which is notably sparse
+relative to the remaining levels, but since we code it as numeric, this
+should not play a significant role.
+
+**Dalc and Walc**: These distributions differ notably; Dalc is heavily
+concentrated at "very low" (approximately 70.0%), with very sparse
+counts at levels 4 and 5. Walc is more spread across all levels, with
+counts for levels 4 and 5 still somewhat underrepresented but sufficient
+to retain as separate levels. Given their expected collinearity, the
+decision on retaining or excluding either variable was left until
+multivariate analysis.
+
+**health**: The distribution is left-skewed. All five levels have
+reasonable counts.
+
+```{r}
+#| label: ida_binary_plots
+#| fig-width: 14
+#| fig-height: 4.5
+
+pal_bin = viridis(8, option = VIR_PAL, begin = 0.1, end = 0.9)
+
+p_sch = make_bar("school", "School", pal_bin[1])
+p_sex = make_bar("sex", "Sex", pal_bin[2])
+p_adr = make_bar("address", "Home Address", pal_bin[3])
+p_fsz = make_bar("famsize", "Family Size", pal_bin[4])
+p_pst = make_bar("Pstatus", "Parental Status", pal_bin[5])
+p_act = make_bar("activities", "Extra-curriculars", pal_bin[6])
+p_rom = make_bar("romantic", "Romantic Relationship", pal_bin[7])
+p_net = make_bar("internet", "Internet at Home", pal_bin[8])
+
+(p_sch | p_sex | p_adr | p_pst) /
+(p_fsz | p_act | p_rom | p_net) +
+  plot_annotation(
+    title = "Univariate Distributions - Binary Variables",
+    theme = theme(plot.title = element_text(size = 20,
+                                            face = "bold", hjust = 0.5)))
+
+```
+
+Below is the summary of findings for Binary variables:
+
+For **school**, the sample is heavily dominated by Gabriel Pereira, with
+only 32 students from Mousinho da Silveira. This imbalance is worth
+keeping in mind as the school coefficient will be estimated from a very
+small contrast group.
+
+For **sex**, the split is nearly equal.
+
+For **address**, the majority of students live in urban area, with rural
+students representing about a fifth of the sample --- both groups are
+sufficiently represented.
+
+For **Pstatus and famsize**, both variables show imbalance in the same
+direction: most students come from larger families and from households
+where parents live together. The "Apart" category for Pstatus is
+particularly sparse, which may produce an unstable estimate --- we kept
+this in mind.
+
+For **activities and romantic**, activities is nearly balanced. Romantic
+relationships are less common but still well-represented, with a little
+bit less than third of students reporting being in a relationship.
+
+For **internet**, the large majority of students have internet access at
+home, leaving only 49 without. This imbalance is not extreme enough to
+require action, but we kept it in mind.
+
+### IDA Screening: Multivariate Descriptions
+
+In this subsection we summarize multivariate characteristics of the
+variables we selected.
+
+We performed stratification on two general variables, namely, by **sex**
+and by **school**. Stratification by all remaining variables was omitted
+to avoid inflating the report with uninformative visuals --- the
+correlation structure between predictors will be addressed more
+systematically in the subsequent correlation and redundancy analysis.
+
+#### Stratification by Sex
+
+```{r}
+#| label: ida_strat_sex_plots
+#| fig-width: 12
+#| fig-height: 8
+
+p1 = ggplot(d_mat_analysis, aes(x = sex, y = age)) +
+  geom_boxplot() + theme_bw() +
+  labs(x = "Sex", y = "Age (years)")
+
+p2 = ggplot(d_mat_analysis, aes(x = studytime, fill = sex)) +
+  geom_bar(position = "fill") +
+  scale_fill_viridis_d(option = VIR_PAL, begin = 0.2, 
+                       end = 0.7, name = "Sex") +
+  scale_y_continuous(labels = scales::label_percent()) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  labs(x = "Study Time", y = "Proportion")
+
+p3 = ggplot(d_mat_plot, aes(x = goout, fill = sex)) +
+  geom_bar(position = "fill") +
+  scale_fill_viridis_d(option = VIR_PAL, begin = 0.2,
+                       end = 0.7, name = "Sex") +
+  scale_y_continuous(labels = scales::label_percent()) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  labs(x = "Going Out", y = "Proportion")
+
+p4 = ggplot(d_mat_plot, aes(x = Walc, fill = sex)) +
+  geom_bar(position = "fill") +
+  scale_fill_viridis_d(option = VIR_PAL, begin = 0.2, 
+                       end = 0.7, name = "Sex") +
+  scale_y_continuous(labels = scales::label_percent()) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  labs(x = "Weekend Alcohol", y = "Proportion")
+
+(p1) / (p2 | p3 | p4) +
+  plot_annotation(
+    title = "Predictors Stratified by Sex",
+    theme = theme(plot.title = element_text(size = 25, 
+                                            face = "bold", hjust = 0.5)))
+
+```
+
+Notable observations are: that female student spent more time studying,
+and consume smaller amount of alcohol on weekends compared to male
+students in this sample; especially when it comes to higher amounts of
+consumption. In terms of age female students are a little bit older and
+their age is less spread out compared to male students.
+
+#### Stratification by School
+
+```{r}
+#| label: ida_strat_school_plots
+#| fig-width: 12
+#| fig-height: 8
+
+rot_x = theme(axis.text.x = element_text(angle = 30, hjust = 1))
+
+p1 = ggplot(d_mat_analysis, aes(x = school, y = age)) +
+  geom_boxplot() + theme_bw() +
+  labs(x = "School", y = "Age (years)")
+
+p2 = ggplot(d_mat_analysis, aes(x = school, fill = Fedu)) +
+  geom_bar(position = "fill") +
+  scale_fill_viridis_d(option = VIR_PAL, name = "Father's Edu") +
+  scale_y_continuous(labels = scales::label_percent()) +
+  theme_bw() +
+  rot_x +
+  labs(x = "School", y = "Proportion")
+
+p3 = ggplot(d_mat_analysis, aes(x = school, fill = Medu)) +
+  geom_bar(position = "fill") +
+  scale_fill_viridis_d(option = VIR_PAL, name = "Mother's Edu") +
+  scale_y_continuous(labels = scales::label_percent()) +
+  theme_bw() +
+  rot_x +
+  labs(x = "School", y = "Proportion")
+
+p4 = ggplot(d_mat_analysis, aes(x = school, fill = address)) +
+  geom_bar(position = "fill") +
+  scale_fill_viridis_d(option = VIR_PAL, begin = 0.2,
+                       end = 0.7, name = "Address") +
+  scale_y_continuous(labels = scales::label_percent()) +
+  theme_bw() +
+  rot_x +
+  labs(x = "School", y = "Proportion")
+
+(p1) / (p2 | p3 | p4) +
+  plot_annotation(
+    title = "Predictors Stratified by School",
+    theme = theme(plot.title = element_text(size = 25,
+                                            face = "bold", hjust = 0.5)))
+
+```
+
+Notable observations are: that students from Mousinho da Silveira are
+generally older, and their parents --- particularly their mothers ---
+have notably lower formal education levels compared to the families at
+Gabriel Pereira. Furthermore, there is a geographic divide, with half of
+Mousinho da Silveira's students living in rural areas, whereas Gabriel
+Pereira serves a predominantly urban population. Overall, Mousinho da
+Silveira reflects a demographic facing more pronounced environmental and
+socioeconomic constraints.
+
+#### Correlation Between All Predictors
+
+We now summarize all of the correlations.
+
+```{r}
+#| label: ida_heatmap_all
+#| fig-width: 9
+#| fig-height: 8
+
+# Make a numeric-only dataframe where factors are converted to ranks
+cor_all_df = d_mat_analysis |>
+  mutate(School = as.numeric(school),
+         Sex = as.numeric(sex),
+         Age = age,
+         Address = as.numeric(address),
+         Famsize = as.numeric(famsize),
+         Pstatus = as.numeric(Pstatus),
+         Medu = as.numeric(Medu),
+         Fedu = as.numeric(Fedu),
+         Traveltime = as.numeric(traveltime),
+         Internet = as.numeric(internet),
+         Studytime = as.numeric(studytime),
+         Activities = as.numeric(activities),
+         Romantic = as.numeric(romantic),
+         Goout = as.numeric(goout),
+         Dalc = as.numeric(Dalc),
+         Walc = as.numeric(Walc),
+         Health = as.numeric(health)) |>
+  select(School, Sex, Age, Address, Famsize, Pstatus, Medu, Fedu, 
+         Traveltime, Internet, Studytime, Activities, Romantic, 
+         Goout, Dalc, Walc, Health)
+
+# Use Spearman correlation
+cor_matrix = cor(cor_all_df, use = "pairwise.complete.obs", 
+                 method = "spearman")
+
+Breaks = seq(-1, 1, by=.01)
+my_palette = c(colorRampPalette(rev(RColorBrewer::brewer.pal(n = 7, 
+                                      name ="RdYlBu")))
+                (length(Breaks)-2), "grey80", "grey80")
+
+pheatmap(cor_matrix, cluster_cols= TRUE, cluster_rows = TRUE,
+         display_numbers = TRUE, fontsize_number = 7,
+         main= "Spearman Correlation Matrix (All Variables)", 
+         breaks = Breaks, color = my_palette)
+
+```
+
+We observe some expected clusters. The strongest positive correlations
+are between Mother's Education (`Medu`) and Father's Education (`Fedu`),
+as well as between Workday Alcohol Consumption (`Dalc`) and Weekend
+Alcohol Consumption (`Walc`) - what we hypothesized in the beginning.
+There is also a notable positive association between `Walc` and `Goout`
+(similarly for `Dalc` and `Goout` but weaker) - which is expectable
+given that some of going out activities include alcohol consumption.
+Additionaly, there is a negative association between `studytime` and
+`sex` - the observation we made when performing stratification by sex.
+Additionally, note that Spearman correlation is used as a common ground
+for our mix of binary, ordinal, and continuous variables, rather than as
+the theoretically optimal measure for every pair.
+
+To make a final decision of keeping or not keeping all of the variables,
+we wanted to perform Redundancy Analysis.
+
+#### Redundancy Analysis
+
+Note that we set nk = 0 to suppress spline transformations, as most
+predictors have only 4 ordinal levels --- too few to support non-linear
+fits. This reduces the redundancy analysis to a linear R\^2 check rather
+than a full non-linear redundancy assessment.
+
+```{r}
+#| label: ida_redundancy
+
+Hmisc::redun(~ age + school + sex + address + famsize + Pstatus + 
+               Medu + Fedu + traveltime + internet + health +
+               goout + activities + Dalc + Walc + studytime + romantic, 
+             data = d_combined, nk = 0)
+
+```
+
+The redundancy analysis showed that no variable exceeds the R\^2 = 0.9
+redundancy threshold, meaning no predictor can be linearly reconstructed
+from the remaining variables with sufficient precision to warrant
+automatic exclusion. The highest R\^2 values belong to `Walc` (0.554)
+and `Dalc` (0.484), reflecting their shared alcohol-consumption
+construct --- consistent with the correlation observed in the heatmap.
+`Medu` and `Fedu` follow at 0.455 and 0.432 respectively, again expected
+given their correlation, but well below the redundancy cutoff. All
+remaining variables have R\^2 below 0.33, indicating they each
+contribute largely independent information. On these facts alone, no
+variable would be excluded --- however, the decisions were revisited in
+the IDA conclusions.
+
+### IDA Conclusions
+
+Based on the screening, three sets of decisions are carried into model
+fitting.
+
+**Variable exclusion.** `Dalc` is dropped from the analytic models. This
+decision is not motivated by multicollinearity (which as we have seen is
+present, but not extreme), rather, the justification is distributional:
+most of students score at the lowest level, and after collapsing the
+sparse upper categories the variable would effectively reduce to a
+near-binary indicator. `Walc`, which is better spread across all five
+levels and captures the same underlying alcohol consumption construct,
+is thus kept as the sole alcohol consumption predictor.
+
+**Level recoding**. For `traveltime`, the top two levels ("30 min –- 1
+h" and "\>1 h") are merged into a single "\>=30 min" category, as the
+original cell sizes (16 and 7 observations respectively) were too small
+to produce meaningful coefficient estimates.
+
+**Underrepresented categories.** Three binary variables show notable
+imbalance: `school` (only 32 students from Mousinho da Silveira),
+`Pstatus` (36 observations in "Apart" category), and `internet` (only 49
+students without home access). These variables are kept in the models,
+as their imbalance is not severe enough to motivate exclusion and each
+carries plausible theoretical relevance. However, their coefficient
+estimates should be interpreted with caution --- the contrast groups are
+small, confidence intervals will be wide, and any effects may be
+unstable.
+
+```{r}
+#| label: ida_recodings
+
+# Drop Dalc from behavioral variable list
+behavioural_vars = c("goout", "activities", "Walc", "studytime", "romantic")
+
+# Collapse traveltime: merge levels 3 and 4 into "3 - >=30 min"
+d_combined$traveltime = fct_collapse(
+  d_combined$traveltime,
+  "3 - >=30 min" = c("3 - 30 min-1 h", "4 - >1 h"))
+d_combined$traveltime = droplevels(d_combined$traveltime)
+
+# Reapply successive difference contrasts after level change
+contrasts(d_combined$traveltime) = MASS::contr.sdif(
+  length(levels(d_combined$traveltime)))
+
+# Regenerate analytic datasets with updated variable list and recodings
+d_mat_analysis = prepare_subject_data(d_combined, ".mat")
+d_por_analysis = prepare_subject_data(d_combined, ".por")
+
+```
+
+### Final Summary Before Analysis
+
+```{r}
+#| label: ida_final_summary
+
+var_summary = tribble(
+  ~Group, ~Variable, ~Type, ~Levels,
+  "General",     "school",     "Binary",  paste(levels(d_combined$school), collapse = " / "),
+  "General",     "sex",        "Binary",  paste(levels(d_combined$sex), collapse = " / "),
+  "General",     "age",        "Numeric", "15-22",
+  "Behavioural", "goout",      "Numeric", "1 (very low) – 5 (very high)",
+  "Behavioural", "activities", "Binary",  paste(levels(d_combined$activities), collapse = " / "),
+  "Behavioural", "Walc",       "Numeric", "1 (very low) – 5 (very high)",
+  "Behavioural", "studytime",  "Ordinal", paste(levels(d_combined$studytime), collapse = " / "),
+  "Behavioural", "romantic",   "Binary",  paste(levels(d_combined$romantic), collapse = " / "),
+  "Structural",  "address",    "Binary",  paste(levels(d_combined$address), collapse = " / "),
+  "Structural",  "famsize",    "Binary",  paste(levels(d_combined$famsize), collapse = " / "),
+  "Structural",  "Pstatus",    "Binary",  paste(levels(d_combined$Pstatus), collapse = " / "),
+  "Structural",  "Medu",       "Ordinal", paste(levels(d_combined$Medu), collapse = " / "),
+  "Structural",  "Fedu",       "Ordinal", paste(levels(d_combined$Fedu), collapse = " / "),
+  "Structural",  "traveltime", "Ordinal", paste(levels(d_combined$traveltime), collapse = " / "),
+  "Structural",  "internet",   "Binary",  paste(levels(d_combined$internet), collapse = " / "),
+  "Structural",  "health",     "Numeric", "1 (very bad) – 5 (very good)",
+  "Outcome",     "G3",         "Numeric", "1-20"
+)
+
+var_summary |>
+  gt(groupname_col = "Group") |>
+  tab_header(
+    title = "Final Analytic Variable Set",
+    subtitle = paste0("n = ", nrow(d_combined), " observations")) |>
+  cols_label(Variable = "Variable", Type = "Type", Levels = "Levels / Range") |>
+  tab_style(style = cell_text(weight = "bold"),
+            locations = cells_row_groups()) |>
+  tab_style(style = cell_text(style = "italic"),
+            locations = cells_body(columns = Variable))
+
+```
+
+## Model Analysis
+
+### Fit the Models
+
+```{r}
+formula_structural = G3 ~ school + sex + age + 
+  address + famsize + Pstatus + Medu + Fedu + 
+  traveltime + internet + health
+
+formula_full = update(formula_structural,
+  . ~ . + goout + activities + Walc + studytime + romantic)
+
+mod_mat_struct = lm(formula_structural, data = d_mat_analysis)
+mod_mat_full = lm(formula_full, data = d_mat_analysis)
+mod_por_struct = lm(formula_structural, data = d_por_analysis)
+mod_por_full = lm(formula_full, data = d_por_analysis)
+
+```
+
+```{r}
+#| label: coef_labels
+
+term_labels = c(
+  `(Intercept)`  = "Intercept",
+  `school1 - Mousinho da Silveira` = "School: Mousinho da Silveira (ref: Gabriel Pereira)",
+  `sex1 - Male` = "Sex: Male (ref: Female)",
+  `age` = "Age",
+  `address1 - Rural` = "Address: Rural (ref: Urban)",
+  `famsize1 - >3 members` = "Family Size: >3 (ref: <=3)",
+  `Pstatus1 - Living together` = "Parental Status: Together (ref: Apart)",
+  `Medu2-1` = "Mother's Edu: 5th-9th vs Primary",
+  `Medu3-2` = "Mother's Edu: Secondary vs 5th-9th",
+  `Medu4-3` = "Mother's Edu: Higher vs Secondary",
+  `Fedu2-1` = "Father's Edu: 5th-9th vs Primary",
+  `Fedu3-2` = "Father's Edu: Secondary vs 5th-9th",
+  `Fedu4-3` = "Father's Edu: Higher vs Secondary",
+  `traveltime2-1` = "Travel: 15-30 min vs <15 min",
+  `traveltime3-2` = "Travel: >=30 min vs 15-30 min",
+  `internet1 - Yes`= "Internet: Yes (ref: No)",
+  `health` = "Health (numeric, 1–5)",
+  `goout` = "Going Out (numeric, 1–5)",
+  `activities1 - Yes` = "Activities: Yes (ref: No)",
+  `Walc` = "Weekend Alcohol (numeric, 1–5)",
+  `studytime2-1` = "Study Time: 2-5 h vs <2 h",
+  `studytime3-2` = "Study Time: 5-10 h vs 2-5 h",
+  `studytime4-3` = "Study Time: >10 h vs 5-10 h",
+  `romantic1 - Yes` = "Romantic: Yes (ref: No)"
+)
+
+make_coef_table = function(model, title_str) {
+  tidy(model, conf.int = TRUE) |>
+    mutate(term = coalesce(term_labels[term], term)) |>
+    select(Term = term, Estimate = estimate,
+           `95% CI lower` = conf.low,
+           `95% CI upper` = conf.high,
+           `p-value` = p.value) |>
+    gt() |>
+    tab_header(title = title_str,
+               subtitle = "Estimates with 95% Confidence Intervals") |>
+    fmt_number(columns = c(Estimate, `95% CI lower`, `95% CI upper`),
+               decimals = 3) |>
+    fmt_scientific(columns = `p-value`, decimals = 2) |>
+    tab_style(style = cell_text(weight = "bold"),
+              locations = cells_body(rows = `p-value` < 0.05))
+}
+
+```
+
+### Mathematics
+
+In this subsection we will focus on interpretation of the effects for
+Mathematics.
+
+#### Coefficients of Structural Model
+
+```{r}
+#| label: coef_mat_struct
+
+make_coef_table(mod_mat_struct, "Mathematics - Structural Model")
+
+```
+
+#### Coefficients of Full Model
+
+```{r}
+#| label: coef_mat_full
+
+make_coef_table(mod_mat_full, "Mathematics - Full Model")
+
+```
+
+#### Interpretation of Coefficients
+
+##### Structural Model
+
+Only two structural predictors reach significance. **Sex** is the
+clearest signal: male students score 0.94 points higher on average (95%
+CI: 0.23 to 1.65). **Health** is the other, and its direction is
+counterintuitive - each unit increase on the 1–5 scale (bigger value the
+better is reported health) is associated with a 0.28 point *decrease* in
+grade (95% CI: -0.53 to -0.03). All remaining structural predictors ---
+parental education, travel time, internet, address, family size, school
+—-- are non-significant, suggesting that environmental background
+explains very little of the variation in mathematics performance on its
+own.
+
+##### Full Model
+
+**Sex** remains significant and grows slightly: male students score 1.27
+points higher (95% CI: 0.54 to 2.01). The fact that the gap widens after
+accounting for study time is counterintuitive. Female students in the
+IDA were observed to study more, so one might expect the gap to shrink.
+Instead, controlling for study time makes the gap larger, suggesting
+that these behavioral differences were partially offsetting the
+underlying grade gap rather than explaining it. **Health** retains the
+same negative estimate (−0.28, 95% CI: -0.52 to -0.03); we suspected
+confounding with social lifestyle, but the consistency across both
+models suggests something else (the explanation was found in
+non-linearity analysis).
+
+Among behavioral predictors, **study time** shows the clearest effect,
+though the pattern is non-monotone across contrasts. The jump from 2–5
+hours to 5–10 hours per week is the strongest single effect in the model
+(+1.52 points, 95% CI: 0.53 to 2.52), while the contrasts involving the
+lowest and highest study groups are small and non-significant. This
+points to a threshold effect: moving from moderate to substantial weekly
+study time matters, but studying beyond that does not yield further
+gains.
+
+**Going out** is the one other behavioral predictor that is significant:
+each additional unit on the 1–5 scale is associated with a 0.38 point
+decrease in grade (95% CI: −0.72 to −0.03). **Weekend alcohol** is
+borderline (−0.30, 95% CI: −0.62 to 0.01) and we would not claim it as a
+finding, though its direction is consistent with the broader pattern of
+social-behavioral factors pulling grades down. **Romantic relationship**
+and **activities** are both non-significant with near-zero estimates.
+
+Note that the intercept is not interpreted. With successive difference
+contrasts applied to the ordered factors (parental education, travel
+time, study time), the intercept represents the mean across factor
+levels rather than a value at any natural reference category. It does
+not correspond to an interpretable student profile.
+
+### Portuguese
+
+In this subsection we focus on Portuguese, but also connecting it to
+results of Mathematics.
+
+#### Coefficients of Structural Model
+
+```{r}
+#| label: coef_por_struct
+
+make_coef_table(mod_por_struct, "Portuguese - Structural Model")
+
+```
+
+#### Coefficients of Full Model
+
+```{r}
+#| label: coef_por_full
+
+make_coef_table(mod_por_full, "Portuguese - Full Model")
+
+```
+
+#### Interpretation of Coefficients
+
+##### Structural Model
+
+As in Mathematics, **health** is significant and negative (−0.23, 95%
+CI: -0.41 to -0.22). **Sex** is again the clearest structural signal,
+but the direction reverses: female students score 0.97 points *higher*
+in Portuguese (95% CI: 0.42 to 1.52), compared to male students scoring
+higher in Mathematics.
+
+Parental education is non-significant, with one exception: the contrast
+between higher education and secondary for mother's education reaches
+significance (+0.88, 95% CI: 0.13 to 1.64). Unlike for Mathematics this
+suggests that the benefit of parental education for Portuguese grades is
+significant but just compared to parents having higher degree and having
+secondary school degree. All remaining structural predictors — school,
+family size, parental status, travel time, internet, address — are
+non-significant.
+
+##### Full Model
+
+**Sex** remains significant after adding behavioral predictors, though
+the estimate goes down to 0.61 (95% CI: 0.05 to 1.17), suggesting
+behavioral differences between sexes explain part of the gap in the case
+of Portuguese. **Age** becomes significant in the full model (+0.35 per
+year, 95% CI: 0.1 to 0.6), which was not the case in the structural
+model - this is likely a suppression effect, where behavioral variables
+that correlate with age were masking its association with the grade.
+**Address** also crosses the significance threshold in the full model:
+rural students score 0.94 points lower on average (95% CI: −1.65 to
+−0.24), a pattern absent in Mathematics. **Health** keeps its negative
+estimate (−0.22, 95% CI: −0.41 to -0.03), again consistent with
+Mathematics. The mother's education contrast (Higher vs Secondary)
+remains significant at +0.83 (95% CI: 0.11 1.55), and father's education
+at the same contrast now also reaches significance (+0.76, p = 0.047)
+--- a stronger parental education signal than in Mathematics overall.
+
+Among behavioral predictors, **going out** is significant and negative
+(−0.43 per unit, 95% CI: −0.69 to −0.16), consistent with Mathematics in
+both direction and magnitude. **Study time** again shows a non-monotone
+pattern, but smaller compared to Mathematics: the 5–10 h vs 2–5 h
+contrast is significant (+0.84, 95% CI: 0.01 to 1.6), while the lowest
+and highest contrasts are not —-- the same threshold structure as in
+Mathematics, but with a smaller effect at the critical step. **Weekend
+alcohol**, **romantic relationship**, and **activities** are all
+non-significant, mirroring the Mathematics results.
+
+The overall picture in comparison with Mathematics: structural
+background is weak, the sex gap persists but flips direction, and the
+behavioral signal is again concentrated in study time intensity and
+going out. The notable differences are that Portuguese grades show a
+stronger parental education effect at the upper end, a rural address
+penalty absent in Mathematics, and an age effect that only emerges once
+behavioral variables are controlled for.
+
+### Model Comparison
+
+In this subsection we compare the predictive power of the models.
+
+```{r}
+#| label: model_comparison
+
+rmse = function(model) sqrt(mean(resid(model)^2))
+mae = function(model) mean(abs(resid(model)))
+
+# Exact LOOCV via leverage shortcut: e_(-i) = e_i / (1 - h_ii)
+loocv_rmse = function(model) {
+  e = resid(model); h = hatvalues(model)
+  sqrt(mean((e / (1 - h))^2))
+}
+loocv_mae = function(model) {
+  e = resid(model); h = hatvalues(model)
+  mean(abs(e / (1 - h)))
+}
+
+comparison = tibble(
+  Subject = c("Mathematics", "Mathematics", "Portuguese", "Portuguese"),
+  Model = c("Structural", "Full", "Structural", "Full"),
+  
+  AIC = c(AIC(mod_mat_struct), AIC(mod_mat_full),
+          AIC(mod_por_struct), AIC(mod_por_full)),
+  
+  RMSE = c(rmse(mod_mat_struct), rmse(mod_mat_full),
+           rmse(mod_por_struct), rmse(mod_por_full)),
+  
+  MAE = c(mae(mod_mat_struct), mae(mod_mat_full),
+          mae(mod_por_struct), mae(mod_por_full)),
+  CV_RMSE = c(loocv_rmse(mod_mat_struct), loocv_rmse(mod_mat_full),
+              loocv_rmse(mod_por_struct), loocv_rmse(mod_por_full)),
+  
+  CV_MAE= c(loocv_mae(mod_mat_struct), loocv_mae(mod_mat_full),
+            loocv_mae(mod_por_struct), loocv_mae(mod_por_full)),
+  
+  R2 = c(summary(mod_mat_struct)$r.squared,
+         summary(mod_mat_full)$r.squared,
+         summary(mod_por_struct)$r.squared,
+         summary(mod_por_full)$r.squared),
+  
+  Adj_R2 = c(summary(mod_mat_struct)$adj.r.squared,
+             summary(mod_mat_full)$adj.r.squared,
+             summary(mod_por_struct)$adj.r.squared,
+             summary(mod_por_full)$adj.r.squared))
+
+comparison |>
+  gt(groupname_col = "Subject") |>
+  tab_header(title = "Model Comparison",
+             subtitle = "Structural vs Full model across both subjects") |>
+  fmt_number(columns = c(AIC, RMSE, MAE, CV_RMSE, CV_MAE), decimals = 2) |>
+  fmt_number(columns = c(R2, Adj_R2), decimals = 3) |>
+  cols_label(Adj_R2 = "Adj. R²", R2 = "R²",
+             CV_RMSE = "CV-RMSE", CV_MAE = "CV-MAE") |>
+  tab_style(style = cell_text(weight = "bold"),
+            locations = cells_row_groups())
+
+```
+
+Across both subjects, the full model outperforms the structural model on
+every metric. The AIC drops by around 20 points for Mathematics and 29
+points for Portuguese. Thus, the behavioral predictors justify their
+inclusion even after accounting for the added complexity.
+
+The clearest way to see the gain is through Adj. R\^2: it roughly
+doubles in both subjects, from 0.068 to 0.141 in Mathematics and from
+0.094 to 0.187 in Portuguese. This directly answers the core research
+question --- personal agency variables do add explanatory power beyond
+structural constraints, and the contribution is substantial relative to
+what the structural model achieves on its own. Portuguese shows a
+slightly larger gain overall, consistent with the stronger and more
+consistent signals we observed in the interpretation section.
+
+In terms of actual prediction accuracy, the CV-RMSE provides the more
+honest comparison, as it approximates the error each model would make on
+an observation it has not seen. The full model improves on the
+structural model in both subjects: CV-RMSE drops from 3.24 to 3.15 in
+Mathematics and from 2.52 to 2.41 in Portuguese, with CV-MAE showing the
+same direction. That said, the absolute prediction errors remain large:
+the best-performing model, the full Portuguese model, still carries a
+CV-RMSE of 2.41, meaning a typical out-of-sample prediction error of
+just under two and a half grade points on a 1--20 scale. So while the
+full model is the better model by every criterion, neither model
+predicts grades particularly well in absolute terms. An Adj. R\^2 of
+0.187 and 0.141 means roughly 80% of the variation in Portuguese grades
+--- and nearly 86% in Mathematics --- is left unexplained.
+
+### Model Diagnostics
+
+In this subsections we discuss how reliable are the observations we
+made.
+
+```{r}
+#| label: diag_helper
+
+make_diag_plots = function(model, title_str) {
+  d = augment(model)
+  
+  p_res = ggplot(d, aes(.fitted, .resid)) +
+    geom_point(alpha = 0.3,
+               colour = viridis(1, option = VIR_PAL, begin = 0.2)) +
+    geom_hline(yintercept = 0, linetype = "dashed", colour = "grey50") +
+    geom_smooth(se = FALSE, method = "loess",
+                colour = viridis(1, option = VIR_PAL, begin = 0.8)) +
+    labs(title = "Residuals vs Fitted",
+         x = "Fitted Values", y = "Residuals")
+
+  p_qq = ggplot(d, aes(sample = .std.resid)) +
+    stat_qq(alpha = 0.3,
+            colour = viridis(1, option = VIR_PAL, begin = 0.2)) +
+    stat_qq_line(linetype = "dashed", colour = "grey50") +
+    labs(title = "Normal Q-Q",
+         x = "Theoretical Quantiles", y = "Standardized Residuals")
+
+  p_sl = ggplot(d, aes(.fitted, sqrt(abs(.std.resid)))) +
+    geom_point(alpha = 0.3,
+               colour = viridis(1, option = VIR_PAL, begin = 0.2)) +
+    geom_smooth(se = FALSE, method = "loess",
+                colour = viridis(1, option = VIR_PAL, begin = 0.8)) +
+    labs(title = "Scale-Location",
+         x = "Fitted Values", y = "sqrt(|Standardized Residuals|)")
+
+  p_lev = ggplot(d, aes(.hat, .std.resid)) +
+    geom_point(aes(size = .cooksd), alpha = 0.3,
+               colour = viridis(1, option = VIR_PAL, begin = 0.2)) +
+    geom_hline(yintercept = 0, linetype = "dashed", colour = "grey50") +
+    geom_smooth(se = FALSE, method = "loess",
+                colour = viridis(1, option = VIR_PAL, begin = 0.8)) +
+    labs(title = "Residuals vs Leverage",
+         x = "Leverage", y = "Standardized Residuals", size = "Cook's D")
+
+  (p_res | p_qq) / (p_sl | p_lev) +
+    plot_annotation(
+      title = title_str,
+      theme = theme(plot.title = element_text(size = 25,
+                                              face = "bold", hjust = 0.5)))
+}
+
+```
+
+#### Mathematics - Full Model
+
+```{r}
+#| label: diag_mat_full
+#| fig-width: 10
+#| fig-height: 8
+
+make_diag_plots(mod_mat_full, "Diagnostics - Mathematics, Full Model")
+
+```
+
+#### Portuguese - Full Model
+
+```{r}
+#| label: diag_por_full
+#| fig-width: 10
+#| fig-height: 8
+
+make_diag_plots(mod_por_full, "Diagnostics - Portuguese, Full Model")
+```
+
+The diagnostic plots for both full models look healthy overall, with no
+severe violations of the core OLS assumptions. The residuals vs fitted
+plots show no obvious non-linearity in either subject, with the loess
+line sitting close to zero across the fitted range. The Q-Q plots
+confirm approximate normality of residuals in both cases, with only
+minor tail deviations in Mathematics. The scale-location plots show some
+variance instability in Mathematics suggesting mild heteroscedasticity,
+which means confidence intervals may be slightly optimistic and
+borderline results such as weekend alcohol should be treated with some
+caution. For Portuguese, the main thing to flag is a single
+high-leverage point with a noticeably larger Cook's D than the rest of
+the sample --- this is almost certainly the student with a final grade
+of 1 noted in the IDA. Their influence on the Portuguese estimates is
+limited but not negligible. Overall, we think that the models are
+reliable enough to support the interpretations made.
+
+### Non-Linear Relationships
+
+For the ordinal predictors encoded with successive difference contrasts
+--- `studytime`, `Medu`, `Fedu`, and `traveltime` --- the question of
+non-linearity is already addressed by the model specification itself.
+Each level transition receives its own coefficient, so the model is not
+forced to assume a linear step across categories. The interpretation
+sections already highlighted the most notable example of this: the
+non-monotone pattern in `studytime`, where the meaningful grade gain is
+present only at the 2–5 h to 5–10 h jump.
+
+The variables that were not checked are `health`, `goout`, and `Walc`,
+which were treated as strictly linear numeric predictors, and `age`. For
+these, we examine the relationship with the final grade graphically.
+
+```{r}
+#| label: nonlinear_check
+#| fig-width: 14
+#| fig-height: 10
+
+d_mat_plot2 = d_mat_analysis |>
+  mutate(
+    health = factor(health, levels = 1:5,
+                    labels = c("1 - very bad", "2", "3", 
+                               "4", "5 - very good")),
+    goout = factor(goout, levels = 1:5,
+                   labels = c("1 - very low", "2", "3", 
+                              "4", "5 - very high")),
+    Walc = factor(Walc, levels = 1:5,
+                  labels = c("1 - very low", "2", "3", 
+                             "4", "5 - very high")))
+
+p_health = ggplot(d_mat_plot2, aes(x = health, y = G3)) +
+  geom_boxplot(fill = viridis(1, option = VIR_PAL,
+                              begin = 0.3), alpha = 0.6) +
+  stat_summary(fun = mean, geom = "point", 
+               shape = 18, size = 3, color = "white") +
+  labs(title = "Health vs G3 (Mathematics)", 
+       x = "Health", y = "Final Grade")
+
+p_goout = ggplot(d_mat_plot2, aes(x = goout, y = G3)) +
+  geom_boxplot(fill = viridis(1, option = VIR_PAL,
+                              begin = 0.5), alpha = 0.6) +
+  stat_summary(fun = mean, geom = "point", 
+               shape = 18, size = 3, color = "white") +
+  labs(title = "Going Out vs G3 (Mathematics)", 
+       x = "Going Out", y = "Final Grade")
+
+p_walc = ggplot(d_mat_plot2, aes(x = Walc, y = G3)) +
+  geom_boxplot(fill = viridis(1, option = VIR_PAL, 
+                              begin = 0.7), alpha = 0.6) +
+  stat_summary(fun = mean, geom = "point", 
+               shape = 18, size = 3, color = "white") +
+  labs(title = "Weekend Alcohol vs G3 (Mathematics)", 
+       x = "Weekend Alcohol", y = "Final Grade")
+
+p_age = ggplot(d_mat_analysis, aes(x = age, y = G3)) +
+  geom_point(alpha = 0.3, 
+             colour = viridis(1, option = VIR_PAL, begin = 0.2)) +
+  geom_smooth(method = "loess", span = 0.9, se = FALSE,
+              colour = viridis(1, option = VIR_PAL, begin = 0.8)) +
+  geom_smooth(method = "lm", se = FALSE, 
+              linetype = "dashed", colour = "grey50") +
+  labs(title = "Age vs G3 (Mathematics)", 
+       x = "Age", y = "Final Grade")
+
+(p_health | p_goout) / (p_walc | p_age) +
+  plot_annotation(
+    title = "Non-Linearity Check - Numeric Predictors (Mathematics)",
+    subtitle = "white diamond marks the group mean; 
+    black line marks the median; 
+    orange line denote smoothed by loess line",
+    theme = theme(plot.title = element_text(size = 25, 
+                                            face = "bold", hjust = 0.5),
+                  plot.subtitle = element_text(size = 23, 
+                                              colour = "grey40", hjust = 0.5)))
+
+```
+
+```{r}
+#| label: nonlinear_check_por
+#| fig-width: 14
+#| fig-height: 10
+
+d_por_plot2 = d_por_analysis |>
+  mutate(
+    health = factor(health, levels = 1:5,
+                    labels = c("1 - very bad", "2", "3", "4", "5 - very good")),
+    goout = factor(goout, levels = 1:5,
+                   labels = c("1 - very low", "2", "3", "4", "5 - very high")),
+    Walc = factor(Walc, levels = 1:5,
+                  labels = c("1 - very low", "2", "3", "4", "5 - very high")))
+
+p_health_por = ggplot(d_por_plot2, aes(x = health, y = G3)) +
+  geom_boxplot(fill = viridis(1, option = VIR_PAL, 
+                              begin = 0.3), alpha = 0.6) +
+  stat_summary(fun = mean, geom = "point", 
+               shape = 18, size = 3, color = "white") +
+  labs(title = "Health vs G3 (Portuguese)", 
+       x = "Health", y = "Final Grade")
+
+p_goout_por = ggplot(d_por_plot2, aes(x = goout, y = G3)) +
+  geom_boxplot(fill = viridis(1, option = VIR_PAL, 
+                              begin = 0.5), alpha = 0.6) +
+  stat_summary(fun = mean, geom = "point", 
+               shape = 18, size = 3, color = "white") +
+  labs(title = "Going Out vs G3 (Portuguese)",
+       x = "Going Out", y = "Final Grade")
+
+p_walc_por = ggplot(d_por_plot2, aes(x = Walc, y = G3)) +
+  geom_boxplot(fill = viridis(1, option = VIR_PAL, begin = 0.7), alpha = 0.6) +
+  stat_summary(fun = mean, geom = "point", 
+               shape = 18, size = 3, color = "white") +
+  labs(title = "Weekend Alcohol vs G3 (Portuguese)", 
+       x = "Weekend Alcohol", y = "Final Grade")
+
+p_age_por = ggplot(d_por_analysis, aes(x = age, y = G3)) +
+  geom_point(alpha = 0.3, colour = viridis(1, option = VIR_PAL, begin = 0.2)) +
+  geom_smooth(method = "loess", span = 0.9, se = FALSE,
+              colour = viridis(1, option = VIR_PAL, begin = 0.8)) +
+  geom_smooth(method = "lm", se = FALSE, 
+              linetype = "dashed", colour = "grey50") +
+  labs(title = "Age vs G3 (Portuguese)", 
+       x = "Age (mean-centered)", y = "Final Grade")
+
+(p_health_por | p_goout_por) / (p_walc_por | p_age_por) +
+  plot_annotation(
+    title = "Non-Linearity Check - Numeric Predictors (Portuguese)",
+    subtitle = "white diamond marks the group mean; 
+    black line marks the median;
+    orange line denote smoothed by loess line",
+    theme = theme(plot.title = element_text(size = 25, 
+                                            face = "bold", hjust = 0.5),
+                  plot.subtitle = element_text(size = 23, 
+                                              colour = "grey40", hjust = 0.5)))
+
+```
+
+For **health** in both Mathematics and Portugues, the pattern is
+non-monotone --- grades drop at level 3 (good health), and then go up.
+The negative linear coefficient in the model is therefore not something
+meaningful. For **going out** and **weekend alcohol**, the relationship
+seem to be relatively linear (there are deviations, `goout` has a jump
+from very low to low; but we think they are negligible given the
+significance and results being consistent with the expectations). For
+**age**, the loess and linear fits are very close for Mathematics, but
+for Portuguese we see a drastic drop at the right tail --- which is
+driven by outlier with grade 5.
+
+As a consequence, the most defensible correction would be for health
+(and maybe goout) to encode them as ordered factor with successive
+difference contrasts, as was done for studytime. However, as we
+discussed in the analysis plan this yields 4 (8) more coefficients,
+which we were not sure we could afford with this sample size; if we
+decided to encode all of the ordinal factors in this way, we would
+overwhelm the model --- so we should have treated some of the ordinals
+as numeric anyway --- and we did not expect that health has a non-linear
+pattern.
+
+But again, looking at it retrospectively, the health should have been
+recoded; and it would most likely remove or explain our finding of
+negative association with the final grade when treated as just numeric.
+
+## Conclusion
+
+This study looks at whether personal agency --- defined as
+student-driven behavioral choices --- helps predict academic success in
+Portuguese and Mathematics, beyond structural and environmental factors.
+The short answer is yes, but the effect is modest and comes with some
+important notes.
+
+In both subjects, the full model performed better than the structural
+model on every measure. Adjusted R\^2 roughly doubled, and AIC dropped
+by about 20 points. The behavioral patterns were clear: spending more
+time **going out** was linked to lower grades, while increasing **study
+time** from moderate (2–5 hours) to higher levels (5–10 hours) per week
+led to the largest improvement in grades. These patterns were consistent
+across subjects and models, which makes them more convincing.
+
+Structural variables, on the other hand, mostly did not show strong
+effects. Family background, parental education, travel time, and
+internet access had little independent impact. The only small exception
+was **parental education**, which showed some effect at higher levels in
+Portuguese, but not in Mathematics.
+
+Among the control variables, **sex** showed the most consistent pattern.
+It was important in all models and flipped between subjects—male
+students did better in Mathematics, while female students did better in
+Portuguese. What’s interesting is how this changed after adding
+behavioral factors. In Portuguese, the female advantage became smaller,
+suggesting that differences in behavior --- like studying more --- help
+explain part of the gap. In Mathematics, however, the male advantage
+actually became larger after accounting for behavior. This suggests that
+these behavioral differences were helping to reduce the gap in this
+case.
+
+**Age** showed a different pattern. It had no clear effect in
+Mathematics, but in Portuguese it became a positive and significant
+factor, but only after behavioral variables were added. This suggests
+that behavior was hiding the effect of age in the simpler model. No
+similar pattern appeared in Mathematics.
+
+However, the findings must be read critically, and the following
+limitations should be kept in mind.
+
+### Limitations
+
+
+**Correlational design.** All inferences are associational.
+
+**Low absolute explanatory power.** Even the best-performing model ---
+the full Portuguese model --- explains only 18.7% of the variance in
+final grades (Adj. R\^2 = 0.187).
+
+**Self-report bias.** All behavioral variables (alcohol consumption,
+study time, going out, ...) are self-reported.
+
+**Small or sparse contrast groups.** Several binary predictors have
+severely imbalanced distributions: only 32 students attend Mousinho da
+Silveira, only 49 students lack home internet access, and the "Apart"
+category for parental status is sparsely populated.
+
+**Sample scope and generalisability.** The analytic sample consists of
+327 students from two schools in Portugal. Both schools are located in
+the same region, the sample is heavily urban, and the data are
+disproportionately drawn from Gabriel Pereira, with only 32 students
+from Mousinho da Silveira.
